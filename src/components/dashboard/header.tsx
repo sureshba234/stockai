@@ -1,4 +1,3 @@
-
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -13,11 +12,9 @@ import { useState, useEffect } from "react";
 import React from 'react';
 
 export function DashboardHeader() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -28,14 +25,38 @@ export function DashboardHeader() {
       router.push(`/dashboard/stocks?q=${searchQuery.trim()}`);
     }
   };
-  
+
+  return (
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+       <SidebarTrigger className="md:hidden" />
+        {isClient && <DashboardBreadcrumb />}
+      <div className="relative ml-auto flex-1 md:grow-0">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search stocks..."
+          className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={handleSearch}
+        />
+      </div>
+      <UserNav />
+    </header>
+  );
+}
+
+function DashboardBreadcrumb() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const generateBreadcrumbs = () => {
     const pathSegments = pathname.split('/').filter(Boolean);
     let currentPath = '';
     return pathSegments.map((segment, index) => {
       currentPath += `/${segment}`;
       const navLink = navigationLinks.flat().find(link => link.href === currentPath);
-      
+
       const isLast = index === pathSegments.length - 1;
       let pageName = navLink?.label || segment.charAt(0).toUpperCase() + segment.slice(1);
 
@@ -59,35 +80,18 @@ export function DashboardHeader() {
         </React.Fragment>
       );
     });
-  }
+  };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-       <SidebarTrigger className="md:hidden" />
-        {isClient && (
-          <Breadcrumb className="hidden md:flex">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              {generateBreadcrumbs()}
-            </BreadcrumbList>
-          </Breadcrumb>
-        )}
-      <div className="relative ml-auto flex-1 md:grow-0">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search stocks..."
-          className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleSearch}
-        />
-      </div>
-      <UserNav />
-    </header>
+    <Breadcrumb className="hidden md:flex">
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        {generateBreadcrumbs()}
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
