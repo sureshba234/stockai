@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
+import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Line, Bar } from 'recharts';
 import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
@@ -156,6 +156,12 @@ function StockPageContent() {
     )
   }
 
+  const formatVolume = (value: number) => {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    return value.toString();
+  }
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -198,18 +204,25 @@ function StockPageContent() {
         <CardContent>
           <div className="w-full h-96">
             <ResponsiveContainer>
-              <LineChart data={stockData.chartData}>
+              <ComposedChart data={stockData.chartData}>
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickMargin={5} />
-                <YAxis stroke="hsl(var(--muted-foreground))" domain={['dataMin', 'dataMax']} tick={{fontSize: 12}} tickFormatter={(value) => `$${value.toFixed(2)}`} />
+                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['dataMin', 'dataMax']} tick={{fontSize: 12}} tickFormatter={(value) => `$${value.toFixed(2)}`} />
+                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} />
+
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
                   }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                  formatter={(value: any, name: string) => {
+                     if (name === 'price') return [`$${(value as number).toFixed(2)}`, 'Price'];
+                     if (name === 'volume') return [formatVolume(value as number), 'Volume'];
+                     return [value, name];
+                  }}
                 />
-                <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Line yAxisId="left" type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Bar yAxisId="right" dataKey="volume" fill="hsl(var(--border))" barSize={20} />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </CardContent>

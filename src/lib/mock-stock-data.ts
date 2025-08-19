@@ -5,7 +5,7 @@ function getRandomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generatePriceHistory(basePrice: number, days: number): { date: string, price: number }[] {
+function generatePriceHistory(basePrice: number, days: number): { date: string, price: number, volume: number }[] {
   const history = [];
   let currentPrice = basePrice;
   const today = new Date();
@@ -18,6 +18,7 @@ function generatePriceHistory(basePrice: number, days: number): { date: string, 
     history.push({
       date: date.toISOString().split('T')[0],
       price: parseFloat(currentPrice.toFixed(2)),
+      volume: Math.floor(Math.random() * 5_000_000) + 1_000_000, // Random volume
     });
   }
   return history;

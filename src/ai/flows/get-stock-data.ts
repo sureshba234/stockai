@@ -95,6 +95,7 @@ async function fetchFromFinnhub(ticker: string): Promise<StockDataOutput> {
     const chartData = candle.t.map((timestamp: number, index: number) => ({
         date: new Date(timestamp * 1000).toISOString().split('T')[0],
         price: parseFloat(candle.c[index].toFixed(2)),
+        volume: candle.v[index],
     })).slice(-90);
 
     const price = quote.c?.toFixed(2);
@@ -180,6 +181,7 @@ async function fetchFromAlphaVantage(ticker: string): Promise<StockDataOutput> {
     const chartData = Object.entries(chartDataRaw).slice(0, 90).map(([date, data]) => ({
         date,
         price: parseFloat((data as any)['4. close']),
+        volume: parseInt((data as any)['5. volume'], 10)
     })).reverse();
     
     const fundamentalsData = [

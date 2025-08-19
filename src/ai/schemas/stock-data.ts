@@ -15,6 +15,7 @@ export type StockDataInput = z.infer<typeof StockDataInputSchema>;
 const StockChartDataSchema = z.object({
   date: z.string(),
   price: z.number(),
+  volume: z.number().optional(),
 });
 
 const StockFundamentalsSchema = z.object({
