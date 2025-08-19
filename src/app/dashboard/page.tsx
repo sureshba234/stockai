@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { ArrowRight, BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Star, ArrowUpRight, ArrowDownRight, MoreHorizontal, Loader2, Send, Wand } from 'lucide-react';
+import { ArrowRight, BotMessageSquare, BellRing, Link as LinkIcon, Star, ArrowUpRight, ArrowDownRight, MoreHorizontal, Loader2, Send, Wand, BarChart } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { StockDataOutput } from '@/ai/schemas/stock-data';
@@ -25,7 +25,7 @@ const features = [
     title: "Market Analysis",
     description: "Deep-dive into market sectors with AI-powered analysis of trends, players, and forecasts.",
     href: "/dashboard/analytics",
-    icon: Sheet,
+    icon: BarChart,
     cta: "Analyze Sectors"
   },
   {

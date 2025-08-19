@@ -178,7 +178,7 @@ function StockPageContent() {
     const daysToShow = rangeInfo ? rangeInfo.days : Infinity;
 
     const allChartData = stockData.chartData;
-    const dataSlice = daysToShow >= allChartData.length ? allChartData : allChartData.slice(-daysToShow);
+    const dataSlice = daysToShow >= allChartData.length ? allChartData : allChartData.slice(allChartData.length - daysToShow);
     
     const ma50 = calculateMovingAverage(dataSlice, 50);
     const ma200 = calculateMovingAverage(dataSlice, 200);
@@ -301,9 +301,9 @@ function StockPageContent() {
             </Button>
              <Dialog open={isCompareDialogOpen} onOpenChange={setCompareDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" disabled={isComparing}>
-                        {isComparing ? <AlertCircle className="mr-2 animate-pulse"/> : <GitCompareArrows className="mr-2" />}
-                        {isComparing ? 'Loading...' : 'Compare'}
+                    <Button variant="outline" disabled={true}>
+                        <GitCompareArrows className="mr-2" />
+                        Compare
                     </Button>
                 </DialogTrigger>
                 <DialogContent>

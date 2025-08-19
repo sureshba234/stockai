@@ -127,6 +127,7 @@ const getNewsAndSentimentFlow = ai.defineFlow(
       const { output } = analysisResults[index];
       return {
         ...article,
+        content: '', // Clear content to save bandwidth
         summary: output?.summary || 'Could not generate summary.',
         sentiment: output?.sentiment || 'Neutral',
       };

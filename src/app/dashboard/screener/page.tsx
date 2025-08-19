@@ -245,7 +245,7 @@ export default function ScreenerPage() {
               </TableHeader>
               <TableBody>
                 {filteredStocks.length > 0 ? (
-                    filteredStocks.map(stock => (
+                    filteredStocks.slice(0, 20).map(stock => (
                     <TableRow key={stock.ticker}>
                       <TableCell>
                          <Link href={`/dashboard/stocks?q=${stock.ticker}`} className="hover:underline">
