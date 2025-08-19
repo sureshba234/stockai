@@ -50,15 +50,14 @@ const stockAgentFlow = ai.defineFlow(
     // We pass the model as a string identifier, letting Genkit handle the routing.
     const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
     
-    const { output } = await agentPrompt.generate({
+    const llmResponse = await ai.generate({
         model,
-        input: input.query,
+        prompt: input.query,
         tools: [getStockData, getNewsAndSentiment],
-        output: {
-            schema: StockAgentOutputSchema,
-        },
     });
 
-    return output!;
+    return {
+      answer: llmResponse.text,
+    };
   }
 );
