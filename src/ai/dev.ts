@@ -6,3 +6,4 @@ import '@/ai/flows/configure-real-time-ml-alerts.ts';
 import '@/ai/flows/discover-cross-asset-relations.ts';
 import '@/ai/flows/enhance-financial-predictions.ts';
 import '@/ai/flows/get-stock-data.ts';
+import '@/ai/schemas/stock-data.ts';

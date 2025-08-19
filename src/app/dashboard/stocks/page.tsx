@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
 import { Newspaper, BarChart, Bell, AlertCircle } from 'lucide-react';
-import { getStockData, type StockDataOutput } from "@/ai/flows/get-stock-data";
+import { getStockData } from "@/ai/flows/get-stock-data";
+import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
