@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon, DollarSign } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -173,37 +173,43 @@ function StockPageContent() {
       setCompareError(null);
   }
 
-  const normalizedChartData = useMemo(() => {
+  const chartData = useMemo(() => {
     if (!stockData) return [];
 
     const mainSlicedData = stockData.chartData.slice(-visibleDataCount);
     if (mainSlicedData.length === 0) return [];
     
-    const basePriceMain = mainSlicedData[0].price;
-
-    let basePriceCompare: number | null = null;
-    let compareSlicedData: StockDataOutput['chartData'] = [];
     if (comparisonStockData) {
+        const basePriceMain = mainSlicedData[0].price;
+        let basePriceCompare: number | null = null;
+        let compareSlicedData: StockDataOutput['chartData'] = [];
+        
         compareSlicedData = comparisonStockData.chartData.slice(-visibleDataCount);
         if (compareSlicedData.length > 0) {
             basePriceCompare = compareSlicedData[0].price;
         }
+
+        return mainSlicedData.map((mainPoint, index) => {
+            const point: any = {
+                date: mainPoint.date,
+                volume: mainPoint.volume,
+                [`${stockData.ticker}_price`]: mainPoint.price,
+                [`${stockData.ticker}_perf`]: (mainPoint.price / basePriceMain - 1) * 100,
+            };
+
+            if (comparisonStockData && compareSlicedData[index] && basePriceCompare) {
+                point[`${comparisonStockData.ticker}_price`] = compareSlicedData[index].price;
+                point[`${comparisonStockData.ticker}_perf`] = (compareSlicedData[index].price / basePriceCompare - 1) * 100;
+            }
+            return point;
+        });
     }
 
-    return mainSlicedData.map((mainPoint, index) => {
-        const point: any = {
-            date: mainPoint.date,
-            volume: mainPoint.volume,
-            [`${stockData.ticker}_price`]: mainPoint.price,
-            [`${stockData.ticker}_perf`]: (mainPoint.price / basePriceMain - 1) * 100,
-        };
-
-        if (comparisonStockData && compareSlicedData[index] && basePriceCompare) {
-            point[`${comparisonStockData.ticker}_price`] = compareSlicedData[index].price;
-            point[`${comparisonStockData.ticker}_perf`] = (compareSlicedData[index].price / basePriceCompare - 1) * 100;
-        }
-        return point;
-    });
+    return mainSlicedData.map(point => ({
+        date: point.date,
+        volume: point.volume,
+        [`${stockData.ticker}_price`]: point.price,
+    }));
 
   }, [stockData, comparisonStockData, visibleDataCount]);
 
@@ -289,6 +295,7 @@ function StockPageContent() {
   }
 
   const formatVolume = (value: number) => {
+    if (!value) return "0";
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
     if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
     return value.toString();
@@ -372,10 +379,10 @@ function StockPageContent() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex-1">
-                <CardTitle>Performance Chart ({visibleDataCount}-day)</CardTitle>
+                <CardTitle>{comparisonStockData ? 'Performance Comparison' : 'Price Chart'} ({visibleDataCount}-day)</CardTitle>
                  <CardDescription>
                     {comparisonStockData 
-                        ? `Comparing ${stockData.ticker} with ${comparisonStockData.ticker}`
+                        ? `Normalized performance of ${stockData.ticker} vs ${comparisonStockData.ticker}`
                         : 'Price and volume chart'
                     }
                 </CardDescription>
@@ -392,9 +399,9 @@ function StockPageContent() {
         <CardContent>
           <div className="w-full h-96">
             <ResponsiveContainer>
-              <ComposedChart data={normalizedChartData}>
+              <ComposedChart data={chartData}>
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickMargin={5} />
-                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['auto', 'auto']} tick={{fontSize: 12}} tickFormatter={(value) => `${value.toFixed(0)}%`} label={{ value: 'Performance %', angle: -90, position: 'insideLeft', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}} />
+                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['auto', 'auto']} tick={{fontSize: 12}} tickFormatter={(value) => comparisonStockData ? `${value.toFixed(0)}%` : `$${value.toFixed(0)}`} label={{ value: comparisonStockData ? 'Performance %' : 'Price $', angle: -90, position: 'insideLeft', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}} />
                 <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} label={{ value: 'Volume', angle: 90, position: 'insideRight', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}}/>
                 <Tooltip
                   contentStyle={{
@@ -411,9 +418,13 @@ function StockPageContent() {
                   }}
                 />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_perf`} name={stockData.ticker} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                {comparisonStockData && (
-                     <Line yAxisId="left" type="monotone" dataKey={`${comparisonStockData.ticker}_perf`} name={comparisonStockData.ticker} stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                {comparisonStockData ? (
+                    <>
+                        <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_perf`} name={`${stockData.ticker} Perf.`} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                        <Line yAxisId="left" type="monotone" dataKey={`${comparisonStockData.ticker}_perf`} name={`${comparisonStockData.ticker} Perf.`} stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                    </>
+                ) : (
+                    <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_price`} name={stockData.ticker} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
                 )}
                 <Bar yAxisId="right" dataKey="volume" name="Volume" fill="hsl(var(--border))" barSize={20} />
               </ComposedChart>
