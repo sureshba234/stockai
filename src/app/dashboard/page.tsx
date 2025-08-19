@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { StockDataOutput } from '@/ai/schemas/stock-data';
 import { useState, useEffect } from 'react';
 import { getStockData } from '@/ai/flows/get-stock-data';
+import { Sheet, BarChart2 } from 'lucide-react';
 
 const features = [
   {
@@ -16,24 +17,21 @@ const features = [
     description: "Generate ML-specific notes for feature handling, explainability, and confidence for your models.",
     href: "/dashboard/ml-notes",
     icon: BotMessageSquare,
+    cta: "Generate Notes"
+  },
+  {
+    title: "Market Analysis",
+    description: "Deep-dive into market sectors with AI-powered analysis of trends, players, and forecasts.",
+    href: "/dashboard/analytics",
+    icon: Sheet,
+    cta: "Analyze Sectors"
   },
   {
     title: "Prediction Visualization",
     description: "Enhance financial predictions with interactive visualizations and detailed ML notes.",
     href: "/dashboard/predictions",
-    icon: BarChart,
-  },
-  {
-    title: "Real-time Alerts",
-    description: "Configure real-time alerts based on ML signals for timely and informed decision-making.",
-    href: "/dashboard/alerts",
-    icon: BellRing,
-  },
-  {
-    title: "Cross-Asset Relations",
-    description: "Discover hidden relationships between financial assets using graph neural networks.",
-    href: "/dashboard/relations",
-    icon: LinkIcon,
+    icon: BarChart2,
+    cta: "Enhance Predictions"
   },
 ];
 
@@ -132,30 +130,30 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <WatchlistCard />
-        {features.slice(0, 3).map((feature) => {
+        {features.map((feature) => {
           const Icon = feature.icon;
           return (
-            <Card key={feature.title} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>{feature.title}</CardTitle>
-                    <CardDescription className="mt-1">{feature.description}</CardDescription>
+            <Link key={feature.title} href={feature.href} className="flex">
+              <Card className="flex flex-col w-full hover:border-primary transition-colors">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{feature.title}</CardTitle>
+                      <CardDescription className="mt-1">{feature.description}</CardDescription>
+                    </div>
+                    <div className="p-2 rounded-lg bg-primary/10">
+                       <Icon className="w-6 h-6 text-primary" />
+                    </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-primary/10">
-                     <Icon className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow flex items-end">
-                <Link href={feature.href} className="w-full">
-                  <Button variant="outline" className="w-full">
-                    <span>Go to {feature.title.split(' ')[0]}</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardFooter className="mt-auto">
+                    <div className="flex items-center text-primary font-medium">
+                      <span>{feature.cta}</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </div>
+                </CardFooter>
+              </Card>
+            </Link>
           );
         })}
       </div>
