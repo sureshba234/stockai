@@ -21,10 +21,11 @@ function StockSearch() {
   const debouncedQuery = useDebounce(query, 200);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const runCommand = useCallback((command: () => unknown) => {
+  const handleSelect = (ticker: string) => {
     setIsOpen(false);
-    command();
-  }, []);
+    setQuery("");
+    router.push(`/dashboard/stocks?q=${ticker}`);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +66,7 @@ function StockSearch() {
                     <CommandItem
                       key={stock.ticker}
                       value={`${stock.name} ${stock.ticker}`}
-                      onSelect={() => runCommand(() => router.push(`/dashboard/stocks?q=${stock.ticker}`))}
+                      onSelect={() => handleSelect(stock.ticker)}
                       className="cursor-pointer"
                     >
                       <LineChart className="mr-2 h-4 w-4" />
