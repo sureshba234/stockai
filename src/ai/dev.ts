@@ -7,4 +7,5 @@ import '@/ai/flows/discover-cross-asset-relations.ts';
 import '@/ai/flows/enhance-financial-predictions.ts';
 import '@/ai/flows/get-stock-data.ts';
 import '@/ai/flows/get-news-sentiment.ts';
+import '@/ai/flows/analyze-market-sector.ts';
 import '@/ai/schemas/stock-data.ts';
