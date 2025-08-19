@@ -6,6 +6,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { z } from 'genkit';
 import { StockDataInputSchema, StockDataOutputSchema, type StockDataInput, type StockDataOutput } from '@/ai/schemas/stock-data';
 
 export async function getStockData(input: StockDataInput): Promise<StockDataOutput | null> {
