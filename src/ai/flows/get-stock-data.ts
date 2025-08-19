@@ -61,7 +61,7 @@ const getStockDataTool = ai.defineTool(
                 console.log(`Attempting to fetch data for ${ticker} from ${provider.name}...`);
                 const data = await provider.fetcher(ticker);
                 console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
-                return data;
+                return { ...data, dataSource: 'live' as const };
             } catch (error: any) {
                 console.warn(`${provider.name} fetch failed for ${ticker}: ${error.message}. Trying next provider...`);
             }
@@ -75,7 +75,7 @@ const getStockDataTool = ai.defineTool(
 
 // #region API Fetchers
 
-async function fetchFromPolygon(ticker: string): Promise<StockDataOutput> {
+async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.POLYGON_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Polygon.io API key not configured.");
 
@@ -143,7 +143,7 @@ async function fetchFromPolygon(ticker: string): Promise<StockDataOutput> {
 }
 
 
-async function fetchFromFMP(ticker: string): Promise<StockDataOutput> {
+async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.FINANCIAL_MODELING_PREP_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Financial Modeling Prep API key not configured.");
 
@@ -211,7 +211,7 @@ async function fetchFromFMP(ticker: string): Promise<StockDataOutput> {
 }
 
 
-async function fetchFromFinnhub(ticker: string): Promise<StockDataOutput> {
+async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.FINNHUB_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Finnhub API key not configured.");
     
@@ -276,7 +276,7 @@ async function fetchFromFinnhub(ticker: string): Promise<StockDataOutput> {
 }
 
 
-async function fetchFromTwelveData(ticker: string): Promise<StockDataOutput> {
+async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.TWELVE_DATA_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Twelve Data API key not configured.");
     
@@ -335,7 +335,7 @@ async function fetchFromTwelveData(ticker: string): Promise<StockDataOutput> {
 }
 
 
-async function fetchFromAlphaVantage(ticker: string): Promise<StockDataOutput> {
+async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error(`Alpha Vantage API key not configured.`);
 
@@ -394,7 +394,7 @@ async function fetchFromAlphaVantage(ticker: string): Promise<StockDataOutput> {
     };
 }
 
-async function fetchFromMarketstack(ticker: string): Promise<StockDataOutput> {
+async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
     const apiKey = process.env.MARKETSTACK_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Marketstack API key not configured.");
     

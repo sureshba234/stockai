@@ -55,7 +55,8 @@ export function generateMockStockData(ticker: string): StockDataOutput {
       { title: `${stockInfo.sector} sector sees major shift, with ${ticker.toUpperCase()} at the forefront.`, source: "Market Watch", url: "https://example.com", publishedAt: "2024-07-28" },
       { title: `Analysts rate ${ticker.toUpperCase()} a 'Strong Buy' after recent performance.`, source: "Financial Times", url: "https://example.com", publishedAt: "2024-07-27" },
     ],
-    predictions: `AI analysis suggests a positive short-term outlook for ${stockInfo.name}, citing strong market position and recent technological advancements. However, sector-wide volatility could introduce some risk. This prediction is for informational purposes only.`
+    predictions: `AI analysis suggests a positive short-term outlook for ${stockInfo.name}, citing strong market position and recent technological advancements. However, sector-wide volatility could introduce some risk. This prediction is for informational purposes only.`,
+    dataSource: 'mock',
   };
 }
 

@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon, Info } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -373,6 +373,15 @@ function StockPageContent() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Comparison Error</AlertTitle>
                 <AlertDescription>{compareError}</AlertDescription>
+            </Alert>
+        )}
+        {stockData.dataSource === 'mock' && (
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Viewing Mock Data</AlertTitle>
+                <AlertDescription>
+                    Live data providers could not be reached. You are currently viewing simulated data. Please check your API keys in Settings.
+                </AlertDescription>
             </Alert>
         )}
       </div>

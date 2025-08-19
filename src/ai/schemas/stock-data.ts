@@ -40,6 +40,7 @@ export const StockDataOutputSchema = z.object({
     chartData: z.array(StockChartDataSchema),
     fundamentalsData: z.array(StockFundamentalsSchema),
     news: z.array(StockNewsSchema).optional(),
-    predictions: z.string().optional().describe("AI-generated prediction for the stock.")
+    predictions: z.string().optional().describe("AI-generated prediction for the stock."),
+    dataSource: z.enum(['live', 'mock']).describe("Indicates if the data is from a live API or mocked."),
 });
 export type StockDataOutput = z.infer<typeof StockDataOutputSchema>;
