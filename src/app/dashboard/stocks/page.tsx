@@ -122,13 +122,18 @@ export default function StocksPage() {
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
         setError(e.message || `Failed to fetch data for ${queryTicker}. Please try another symbol.`);
+        toast({
+          title: "Error Fetching Data",
+          description: e.message || `Failed to fetch data for ${queryTicker}.`,
+          variant: "destructive"
+        })
       } finally {
         setIsLoading(false);
       }
     }
 
     fetchData();
-  }, [searchParams]);
+  }, [searchParams, toast]);
 
   const handleActionClick = (action: string) => {
     toast({
@@ -147,7 +152,7 @@ export default function StocksPage() {
     return <StockPageSkeleton />;
   }
 
-  if (error) {
+  if (error && !stockData) {
     return (
         <Card className="mt-4">
           <CardHeader>
@@ -316,5 +321,3 @@ export default function StocksPage() {
     </div>
   );
 }
-
-    

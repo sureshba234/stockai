@@ -99,10 +99,10 @@ const getStockDataTool = ai.defineTool(
 
             // Generate AI prediction
             const predictionPrompt = `
-                You are a financial analyst. Based on the following data for ${overviewData.Name} (${ticker}), provide a short, one-paragraph prediction for the stock's future performance. 
+                You are a financial analyst. Based on the following data for ${overviewData.Name} (${ticker}), provide a short, one-paragraph prediction for the stock\'s future performance. 
                 Do not use markdown or formatting.
                 Current Price: $${price}
-                Today's Change: ${change} (${changePercent}%)
+                Today\'s Change: ${change} (${changePercent}%)
                 Recent News:
                 ${news.slice(0, 2).map(n => `- ${n.title}`).join('\n')}
             `;
