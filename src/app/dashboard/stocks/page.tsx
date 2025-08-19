@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Line, Bar } from 'recharts';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { stockData as stockList } from "@/lib/stocks";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 function StockPageSkeleton() {
@@ -76,10 +77,17 @@ function StockPageSkeleton() {
 function StockPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
+  
   const [stockData, setStockData] = useState<StockDataOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  
+  const [comparisonStockData, setComparisonStockData] = useState<StockDataOutput | null>(null);
+  const [isComparing, setIsComparing] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
+  const [isCompareDialogOpen, setCompareDialogOpen] = useState(false);
+
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [visibleDataCount, setVisibleDataCount] = useState(90);
@@ -125,12 +133,80 @@ function StockPageContent() {
     toast({ title: "Data Exported", description: `Chart data for ${stockData.ticker} has been downloaded.` });
   };
   
-  const handleCompareSelect = (ticker: string) => {
-    toast({
-      title: "Compare (Simulated)",
-      description: `Comparing ${stockData?.ticker} with ${ticker}. This feature is in development.`
-    })
+  const handleCompareSelect = async (ticker: string) => {
+    setCompareDialogOpen(false);
+    if (!stockData || stockData.ticker === ticker) return;
+    
+    setIsComparing(true);
+    setCompareError(null);
+    setComparisonStockData(null);
+    try {
+        const data = await getStockData({ ticker });
+        if (data) {
+            setComparisonStockData(data);
+            toast({
+                title: "Comparison Added",
+                description: `Now comparing ${stockData.ticker} with ${data.ticker}.`
+            });
+        } else {
+            setCompareError(`Could not fetch data for ${ticker}.`);
+            toast({
+                title: "Comparison Failed",
+                description: `Could not fetch data for ${ticker}.`,
+                variant: "destructive"
+            });
+        }
+    } catch (e: any) {
+        setCompareError(e.message);
+        toast({
+            title: "Comparison Error",
+            description: e.message,
+            variant: "destructive"
+        });
+    } finally {
+        setIsComparing(false);
+    }
   }
+
+  const clearComparison = () => {
+      setComparisonStockData(null);
+      setCompareError(null);
+  }
+
+  const normalizedChartData = useMemo(() => {
+    if (!stockData) return [];
+
+    const mainSlicedData = stockData.chartData.slice(-visibleDataCount);
+    if (mainSlicedData.length === 0) return [];
+    
+    const basePriceMain = mainSlicedData[0].price;
+
+    let basePriceCompare: number | null = null;
+    let compareSlicedData: StockDataOutput['chartData'] = [];
+    if (comparisonStockData) {
+        compareSlicedData = comparisonStockData.chartData.slice(-visibleDataCount);
+        if (compareSlicedData.length > 0) {
+            basePriceCompare = compareSlicedData[0].price;
+        }
+    }
+
+    return mainSlicedData.map((mainPoint, index) => {
+        const point: any = {
+            date: mainPoint.date,
+            volume: mainPoint.volume,
+            [`${stockData.ticker}_price`]: mainPoint.price,
+            [`${stockData.ticker}_perf`]: (mainPoint.price / basePriceMain - 1) * 100,
+        };
+
+        if (comparisonStockData && compareSlicedData[index] && basePriceCompare) {
+            point[`${comparisonStockData.ticker}_price`] = compareSlicedData[index].price;
+            point[`${comparisonStockData.ticker}_perf`] = (compareSlicedData[index].price / basePriceCompare - 1) * 100;
+        }
+        return point;
+    });
+
+  }, [stockData, comparisonStockData, visibleDataCount]);
+
 
   useEffect(() => {
     if (!api) {
@@ -158,8 +234,7 @@ function StockPageContent() {
     async function fetchData() {
       const queryTicker = searchParams.get('q')?.toUpperCase();
       if (!queryTicker) {
-        setError("No stock ticker provided. Please search for a stock.");
-        setIsLoading(false);
+        router.push('/dashboard/stocks?q=AAPL');
         return;
       }
 
@@ -169,7 +244,7 @@ function StockPageContent() {
         const data = await getStockData({ ticker: queryTicker });
         setStockData(data);
         if (!data) {
-          setError(`Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`);
+          setError(`Failed to fetch data for ${queryTicker}. The ticker may be invalid, or API providers may be unavailable.`);
         }
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
@@ -180,7 +255,7 @@ function StockPageContent() {
     }
 
     fetchData();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleTabClick = (index: number) => {
     api?.scrollTo(index);
@@ -191,7 +266,7 @@ function StockPageContent() {
     if (direction === 'in') {
       setVisibleDataCount(prev => Math.max(30, prev - 30));
     } else {
-      setVisibleDataCount(prev => Math.min(90, prev + 30));
+      setVisibleDataCount(prev => Math.min(stockData?.chartData.length || 90, prev + 30));
     }
   }
 
@@ -234,7 +309,7 @@ function StockPageContent() {
               </div>
             </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" onClick={toggleWatchlist}>
                 <Star className={cn("mr-2", isWatched && "fill-yellow-400 text-yellow-500")} />
                 {isWatched ? 'In Watchlist' : 'Watchlist'}
@@ -243,11 +318,11 @@ function StockPageContent() {
                 <Bell className="mr-2" />
                 Alert
             </Button>
-            <Dialog>
+            <Dialog open={isCompareDialogOpen} onOpenChange={setCompareDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline">
-                        <GitCompareArrows className="mr-2" />
-                        Compare
+                    <Button variant="outline" disabled={isComparing}>
+                        {isComparing ? <AlertCircle className="mr-2 animate-pulse"/> : <GitCompareArrows className="mr-2" />}
+                        {isComparing ? 'Loading...' : 'Compare'}
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -278,19 +353,38 @@ function StockPageContent() {
                 <Download className="mr-2" />
                 Export
             </Button>
+            {comparisonStockData && (
+                <Button variant="destructive" onClick={clearComparison}>
+                    <XIcon className="mr-2" />
+                    Clear Comparison ({comparisonStockData.ticker})
+                </Button>
+            )}
         </div>
+        {compareError && (
+             <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Comparison Error</AlertTitle>
+                <AlertDescription>{compareError}</AlertDescription>
+            </Alert>
+        )}
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex-1">
-                <CardTitle>Price Chart ({visibleDataCount}-day)</CardTitle>
+                <CardTitle>Performance Chart ({visibleDataCount}-day)</CardTitle>
+                 <CardDescription>
+                    {comparisonStockData 
+                        ? `Comparing ${stockData.ticker} with ${comparisonStockData.ticker}`
+                        : 'Price and volume chart'
+                    }
+                </CardDescription>
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={visibleDataCount <= 30}>
                     <ZoomIn className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={visibleDataCount >= 90}>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={visibleDataCount >= stockData.chartData.length}>
                     <ZoomOut className="h-4 w-4" />
                 </Button>
             </div>
@@ -298,29 +392,67 @@ function StockPageContent() {
         <CardContent>
           <div className="w-full h-96">
             <ResponsiveContainer>
-              <ComposedChart data={stockData.chartData.slice(-visibleDataCount)}>
+              <ComposedChart data={normalizedChartData}>
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickMargin={5} />
-                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['dataMin', 'dataMax']} tick={{fontSize: 12}} tickFormatter={(value) => `$${value.toFixed(2)}`} />
-                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} />
-
+                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['auto', 'auto']} tick={{fontSize: 12}} tickFormatter={(value) => `${value.toFixed(0)}%`} label={{ value: 'Performance %', angle: -90, position: 'insideLeft', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}} />
+                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} label={{ value: 'Volume', angle: 90, position: 'insideRight', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}}/>
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
                   }}
                   formatter={(value: any, name: string) => {
-                     if (name === 'price') return [`$${(value as number).toFixed(2)}`, 'Price'];
+                     const ticker = name.split('_')[0];
+                     const type = name.split('_')[1];
+                     if (type === 'perf') return [`${(value as number).toFixed(2)}%`, `${ticker} Performance`];
+                     if (type === 'price') return [`$${(value as number).toFixed(2)}`, `${ticker} Price`];
                      if (name === 'volume') return [formatVolume(value as number), 'Volume'];
                      return [value, name];
                   }}
                 />
-                <Line yAxisId="left" type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                <Bar yAxisId="right" dataKey="volume" fill="hsl(var(--border))" barSize={20} />
+                <Legend />
+                <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_perf`} name={stockData.ticker} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                {comparisonStockData && (
+                     <Line yAxisId="left" type="monotone" dataKey={`${comparisonStockData.ticker}_perf`} name={comparisonStockData.ticker} stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                )}
+                <Bar yAxisId="right" dataKey="volume" name="Volume" fill="hsl(var(--border))" barSize={20} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
+
+      {comparisonStockData && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Fundamentals Comparison</CardTitle>
+                <CardDescription>Key metrics for {stockData.ticker} vs {comparisonStockData.ticker}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Metric</TableHead>
+                            <TableHead className="text-right">{stockData.ticker}</TableHead>
+                            <TableHead className="text-right">{comparisonStockData.ticker}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {stockData.fundamentalsData.map((item, index) => {
+                            const compareItem = comparisonStockData?.fundamentalsData.find(c => c.label === item.label);
+                            return (
+                                <TableRow key={item.label}>
+                                    <TableCell className="font-medium">{item.label}</TableCell>
+                                    <TableCell className="text-right">{item.value}</TableCell>
+                                    <TableCell className="text-right">{compareItem ? compareItem.value : 'N/A'}</TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+      )}
       
       <div>
         <div className="flex space-x-2 mb-4 overflow-x-auto">
