@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
-import { FileText, Newspaper, BarChart } from 'lucide-react';
+import { FileText, Newspaper, BarChart, ArrowUp, ArrowDown } from 'lucide-react';
 
 
 const stockData = {
@@ -25,6 +25,17 @@ const chartData = [
   { date: '2024-07-09', price: 212 },
   { date: '2024-07-10', price: 214.29 },
 ];
+
+const fundamentalsData = [
+    { label: "Market Cap", value: "3.28T" },
+    { label: "P/E Ratio (TTM)", value: "33.19" },
+    { label: "EPS (TTM)", value: "6.46" },
+    { label: "Revenue (TTM)", value: "381.62B" },
+    { label: "Net Income (TTM)", value: "100.39B" },
+    { label: "Shares Outstanding", value: "15.33B" },
+    { label: "Beta (5Y Monthly)", value: "1.24" },
+    { label: "Dividend Yield", value: "0.46%" },
+]
 
 export default function StocksPage() {
   return (
@@ -73,11 +84,16 @@ export default function StocksPage() {
         <TabsContent value="fundamentals">
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                        <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">Coming Soon</h3>
-                        <p className="text-muted-foreground">Detailed financial statements and key metrics will be available here.</p>
-                    </div>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {fundamentalsData.map((item) => (
+                            <Card key={item.label}>
+                                <CardHeader className="pb-2">
+                                    <CardDescription>{item.label}</CardDescription>
+                                    <CardTitle className="text-2xl">{item.value}</CardTitle>
+                                </CardHeader>
+                            </Card>
+                        ))}
+                   </div>
                 </CardContent>
             </Card>
         </TabsContent>
