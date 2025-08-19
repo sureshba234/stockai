@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense, useCallback } from "react";
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Line, Bar } from 'recharts';
 import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut } from 'lucide-react';
@@ -13,6 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { stockData as stockList } from "@/lib/stocks";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 
 function StockPageSkeleton() {
@@ -72,6 +75,7 @@ function StockPageSkeleton() {
 
 function StockPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [stockData, setStockData] = useState<StockDataOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +83,54 @@ function StockPageContent() {
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [visibleDataCount, setVisibleDataCount] = useState(90);
+  const [isWatched, setIsWatched] = useState(false);
+
+  useEffect(() => {
+    if (!stockData) return;
+    const watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
+    setIsWatched(watchlist.includes(stockData.ticker));
+  }, [stockData]);
+
+  const toggleWatchlist = () => {
+    if (!stockData) return;
+    let watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
+    if (isWatched) {
+      watchlist = watchlist.filter((t: string) => t !== stockData.ticker);
+      toast({ title: "Removed from Watchlist", description: `${stockData.ticker} has been removed from your watchlist.` });
+    } else {
+      watchlist.push(stockData.ticker);
+      toast({ title: "Added to Watchlist", description: `${stockData.ticker} has been added to your watchlist.` });
+    }
+    localStorage.setItem("watchlist", JSON.stringify(watchlist));
+    setIsWatched(!isWatched);
+  };
+
+  const handleSetAlert = () => {
+    if (!stockData) return;
+    router.push(`/dashboard/alerts?mlSignal=${stockData.ticker} Price Cross`);
+  };
+
+  const handleExportData = () => {
+    if (!stockData) return;
+    const header = "date,price,volume\n";
+    const csv = stockData.chartData.map(d => `${d.date},${d.price},${d.volume || 0}`).join("\n");
+    const blob = new Blob([header + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${stockData.ticker}_data.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Data Exported", description: `Chart data for ${stockData.ticker} has been downloaded.` });
+  };
+  
+  const handleCompareSelect = (ticker: string) => {
+    toast({
+      title: "Compare (Simulated)",
+      description: `Comparing ${stockData?.ticker} with ${ticker}. This feature is in development.`
+    })
+  }
 
   useEffect(() => {
     if (!api) {
@@ -116,6 +168,9 @@ function StockPageContent() {
       try {
         const data = await getStockData({ ticker: queryTicker });
         setStockData(data);
+        if (!data) {
+          setError(`Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`);
+        }
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
         setError(e.message || `An unexpected error occurred while fetching data for ${queryTicker}.`);
@@ -126,13 +181,6 @@ function StockPageContent() {
 
     fetchData();
   }, [searchParams]);
-
-  const handleActionClick = (action: string) => {
-    toast({
-      title: `${action} (Simulated)`,
-      description: `The ${action.toLowerCase()} action was triggered for ${stockData?.ticker}.`,
-    });
-  };
 
   const handleTabClick = (index: number) => {
     api?.scrollTo(index);
@@ -187,19 +235,46 @@ function StockPageContent() {
             </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => handleActionClick('Add to Watchlist')}>
-                <Star className="mr-2" />
-                Watchlist
+            <Button variant="outline" onClick={toggleWatchlist}>
+                <Star className={cn("mr-2", isWatched && "fill-yellow-400 text-yellow-500")} />
+                {isWatched ? 'In Watchlist' : 'Watchlist'}
             </Button>
-            <Button variant="outline" onClick={() => handleActionClick('Add Alert')}>
+            <Button variant="outline" onClick={handleSetAlert}>
                 <Bell className="mr-2" />
                 Alert
             </Button>
-            <Button variant="outline" onClick={() => handleActionClick('Compare')}>
-                <GitCompareArrows className="mr-2" />
-                Compare
-            </Button>
-            <Button variant="outline" onClick={() => handleActionClick('Export Data')}>
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <GitCompareArrows className="mr-2" />
+                        Compare
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Compare with another stock</DialogTitle>
+                        <DialogDescription>Select a stock to compare with {stockData.ticker}.</DialogDescription>
+                    </DialogHeader>
+                    <Command>
+                        <CommandInput placeholder="Search stocks to compare..." />
+                        <CommandList>
+                            <CommandEmpty>No results found.</CommandEmpty>
+                            <CommandGroup heading="Suggestions">
+                                {stockList.filter(s => s.ticker !== stockData.ticker).map((stock) => (
+                                <CommandItem
+                                    key={stock.ticker}
+                                    onSelect={() => handleCompareSelect(stock.ticker)}
+                                    className="cursor-pointer"
+                                >
+                                    {stock.name} ({stock.ticker})
+                                </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={handleExportData}>
                 <Download className="mr-2" />
                 Export
             </Button>

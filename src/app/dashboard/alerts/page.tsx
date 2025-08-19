@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const formSchema = z.object({
   mlSignal: z.string().min(1, "ML signal is required."),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function AlertsPage() {
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ConfigureRealTimeMLAlertsOutput | null>(null);
   const { toast } = useToast();
@@ -33,7 +35,7 @@ export default function AlertsPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      mlSignal: "Model Drift Score",
+      mlSignal: "",
       threshold: 0.85,
       alertFrequency: "daily",
       featureHandlingNotes: "The model is sensitive to sudden changes in transaction volume.",
@@ -42,12 +44,26 @@ export default function AlertsPage() {
     },
   });
 
+  useEffect(() => {
+    const mlSignal = searchParams.get("mlSignal");
+    if (mlSignal) {
+      form.setValue("mlSignal", mlSignal);
+    } else {
+        form.setValue("mlSignal", "Model Drift Score");
+    }
+  }, [searchParams, form]);
+
+
   async function onSubmit(data: FormData) {
     setIsLoading(true);
     setResult(null);
     try {
       const apiResult = await configureRealTimeMLAlerts(data);
       setResult(apiResult);
+      toast({
+        title: "Alert Configured",
+        description: "Your new real-time ML alert has been set up successfully."
+      })
     } catch (error) {
       console.error("Error configuring alert:", error);
       toast({
