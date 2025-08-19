@@ -1,7 +1,11 @@
 {
   "name": "Insight Canvas",
-  "short_name": "Insight",
+  "short_name": "Insight Canvas",
   "description": "Financial platforms with Lovable hosting.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F0F8FF",
+  "theme_color": "#008080",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -13,10 +17,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "theme_color": "#008080",
-  "background_color": "#F0F8FF",
-  "start_url": "/dashboard",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
