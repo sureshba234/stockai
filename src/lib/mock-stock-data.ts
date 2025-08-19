@@ -50,9 +50,9 @@ export function generateMockStockData(ticker: string): StockDataOutput {
       { label: "Revenue (TTM)", value: `${(Math.random() * 100 + 10).toFixed(2)}B` },
     ],
     news: [
-      { title: `Exciting developments for ${stockInfo.name} as new product is announced.`, source: "Tech News Today", url: "#", publishedAt: "2024-07-29" },
-      { title: `${stockInfo.sector} sector sees major shift, with ${ticker.toUpperCase()} at the forefront.`, source: "Market Watch", url: "#", publishedAt: "2024-07-28" },
-      { title: `Analysts rate ${ticker.toUpperCase()} a 'Strong Buy' after recent performance.`, source: "Financial Times", url: "#", publishedAt: "2024-07-27" },
+      { title: `Exciting developments for ${stockInfo.name} as new product is announced.`, source: "Tech News Today", url: "https://example.com", publishedAt: "2024-07-29" },
+      { title: `${stockInfo.sector} sector sees major shift, with ${ticker.toUpperCase()} at the forefront.`, source: "Market Watch", url: "https://example.com", publishedAt: "2024-07-28" },
+      { title: `Analysts rate ${ticker.toUpperCase()} a 'Strong Buy' after recent performance.`, source: "Financial Times", url: "https://example.com", publishedAt: "2024-07-27" },
     ],
     predictions: `AI analysis suggests a positive short-term outlook for ${stockInfo.name}, citing strong market position and recent technological advancements. However, sector-wide volatility could introduce some risk. This prediction is for informational purposes only.`
   };
