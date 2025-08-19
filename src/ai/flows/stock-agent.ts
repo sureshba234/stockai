@@ -56,9 +56,8 @@ const stockAgentFlow = ai.defineFlow(
     const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
     
     const {output} = await agentPrompt({
-        ...input,
-        model,
-    });
+        ...input
+    }, { model }); // Pass model in the second argument (options)
 
     return output!;
   }
