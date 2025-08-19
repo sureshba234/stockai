@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -8,14 +6,23 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { navigationLinks } from "@/components/dashboard/sidebar-nav";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Link from "next/link";
-import { Search, LineChart } from "lucide-react";
+import { Search, LineChart, History } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import React from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { stockData } from "@/lib/stocks";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Badge } from "@/components/ui/badge";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import Image from "next/image";
+import { generateMockMarketMovers } from "@/lib/mock-stock-data";
 
+type Mover = {
+    ticker: string;
+    price: string;
+    changePercent: string;
+    isUp: boolean;
+};
 
 function StockSearch() {
   const router = useRouter();
@@ -24,15 +31,31 @@ function StockSearch() {
   const debouncedQuery = useDebounce(query, 300);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [recentSearches, setRecentSearches] = useLocalStorage<string[]>("recentStockSearches", []);
+  
+  const [marketMovers, setMarketMovers] = useState<Record<string, Mover>>({});
 
   useEffect(() => {
     setIsMounted(true);
+    const movers = generateMockMarketMovers(stockData.length, 'gainers');
+    const moversMap: Record<string, Mover> = {};
+    movers.forEach(mover => {
+        moversMap[mover.ticker] = mover;
+    })
+    setMarketMovers(moversMap);
+
   }, []);
 
   const handleSelect = (ticker: string) => {
     router.push(`/dashboard/stocks?q=${ticker}`);
     setQuery("");
     setIsOpen(false);
+    
+    // Add to recent searches
+    setRecentSearches(prev => {
+        const newRecents = [ticker, ...prev.filter(t => t !== ticker)];
+        return newRecents.slice(0, 5); // Keep only the 5 most recent
+    })
   };
 
   const filteredStocks = React.useMemo(() => {
@@ -42,6 +65,10 @@ function StockSearch() {
         stock.ticker.toLowerCase().includes(debouncedQuery.toLowerCase())
       ).slice(0, 7);
   }, [debouncedQuery]);
+  
+  const recentStockDetails = useMemo(() => {
+      return recentSearches.map(ticker => stockData.find(s => s.ticker === ticker)).filter(Boolean) as (typeof stockData[0])[];
+  }, [recentSearches])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,24 +96,48 @@ function StockSearch() {
         {isMounted && isOpen && (
           <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
             <CommandList>
+              {debouncedQuery.length === 0 && recentStockDetails.length > 0 && (
+                 <CommandGroup heading="Recent Searches">
+                    {recentStockDetails.map((stock) => (
+                         <CommandItem
+                            key={`recent-${stock.ticker}`}
+                            value={`recent-${stock.ticker}`}
+                            onSelect={() => handleSelect(stock.ticker)}
+                            className="cursor-pointer"
+                        >
+                            <History className="mr-2 h-4 w-4" />
+                            <span>{stock.name} ({stock.ticker})</span>
+                        </CommandItem>
+                    ))}
+                 </CommandGroup>
+              )}
               {filteredStocks.length > 0 ? (
                 <CommandGroup heading="Suggestions">
-                  {filteredStocks.map((stock) => (
-                    <CommandItem
-                      key={stock.ticker}
-                      value={stock.ticker}
-                      onSelect={() => handleSelect(stock.ticker)}
-                      className="cursor-pointer"
-                    >
-                      <LineChart className="mr-2 h-4 w-4" />
-                      <div className="flex-1">
-                        <span>{stock.name} ({stock.ticker})</span>
-                      </div>
-                      <Badge variant="outline" className="ml-auto text-xs">
-                        {stock.sector}
-                      </Badge>
-                    </CommandItem>
-                  ))}
+                  {filteredStocks.map((stock) => {
+                    const moverData = marketMovers[stock.ticker];
+                    return (
+                        <CommandItem
+                            key={stock.ticker}
+                            value={stock.ticker}
+                            onSelect={() => handleSelect(stock.ticker)}
+                            className="cursor-pointer flex justify-between items-center"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Image src={stock.logoUrl} alt={`${stock.name} logo`} width={24} height={24} className="rounded-full" />
+                                <div>
+                                    <span className="font-medium">{stock.ticker}</span>
+                                    <p className="text-xs text-muted-foreground">{stock.name}</p>
+                                </div>
+                            </div>
+                           {moverData && (
+                             <div className="text-right">
+                                <p className="font-mono text-sm">${moverData.price}</p>
+                                <p className={`text-xs ${moverData.isUp ? 'text-green-500' : 'text-red-500'}`}>{moverData.isUp ? '+' : ''}{moverData.changePercent}</p>
+                            </div>
+                           )}
+                        </CommandItem>
+                    )
+                  })}
                 </CommandGroup>
               ) : (
                 debouncedQuery.length > 0 && <CommandEmpty>No results found.</CommandEmpty>
