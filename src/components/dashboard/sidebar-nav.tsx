@@ -9,7 +9,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper, Star } from "lucide-react";
+import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper, Star, Filter } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavLink = {
@@ -25,6 +25,7 @@ const mainNavLinks: NavLink[] = [
   { href: "/dashboard/watchlist", label: "Watchlist", icon: Star },
   { href: "/dashboard/portfolio", label: "Portfolio", icon: Wallet },
   { href: "/dashboard/news", label: "News", icon: Newspaper },
+  { href: "/dashboard/screener", label: "Screener", icon: Filter },
 ];
 
 const secondaryNavLinks: NavLink[] = [
