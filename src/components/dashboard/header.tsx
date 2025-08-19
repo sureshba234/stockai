@@ -2,14 +2,90 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/dashboard/user-nav";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { navigationLinks } from "@/components/dashboard/sidebar-nav";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, LineChart } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { stockData } from "@/lib/stocks";
+import { useDebounce } from "@/hooks/use-debounce";
+
+
+function StockSearch() {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 200);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const handleSelect = useCallback((ticker: string) => {
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/dashboard/stocks?q=${ticker}`);
+  }, [router]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  const filteredStocks = debouncedQuery.length > 0
+    ? stockData.filter(stock =>
+        stock.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        stock.ticker.toLowerCase().includes(debouncedQuery.toLowerCase())
+      ).slice(0, 7)
+    : [];
+
+  return (
+    <div className="relative" ref={searchRef}>
+      <Command shouldFilter={false} className="overflow-visible bg-transparent">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <CommandInput
+            className="w-full pl-9 pr-4 h-10 border rounded-lg md:w-[200px] lg:w-[336px]"
+            placeholder="Search stocks..."
+            value={query}
+            onValueChange={setQuery}
+            onFocus={() => setIsOpen(true)}
+          />
+        </div>
+        {isOpen && (
+           <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
+            <CommandList>
+              {filteredStocks.length > 0 && (
+                <CommandGroup heading="Suggestions">
+                  {filteredStocks.map((stock) => (
+                    <CommandItem
+                      key={stock.ticker}
+                      value={`${stock.name} ${stock.ticker}`}
+                      onSelect={() => handleSelect(stock.ticker)}
+                      className="cursor-pointer"
+                    >
+                      <LineChart className="mr-2 h-4 w-4" />
+                      <span>{stock.name} ({stock.ticker})</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+              {isOpen && query.length > 0 && filteredStocks.length === 0 && (
+                 <CommandEmpty>No results found.</CommandEmpty>
+              )}
+            </CommandList>
+           </div>
+        )}
+      </Command>
+    </div>
+  )
+}
+
 
 export function DashboardHeader() {
   const [isClient, setIsClient] = useState(false);
@@ -17,30 +93,13 @@ export function DashboardHeader() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  const handleSearchClick = () => {
-    // This is a bit of a hack to trigger the command palette, which listens for Cmd/Ctrl+K.
-    // In a real app, we'd use a more robust state management solution (like Zustand or Context)
-    // to open the command palette from here.
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
-  };
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <SidebarTrigger className="md:hidden" />
       {isClient && <DashboardBreadcrumb />}
       <div className="relative ml-auto flex-1 md:grow-0">
-        <Button
-            variant="outline"
-            className="w-full justify-start text-muted-foreground md:w-[200px] lg:w-[336px]"
-            onClick={handleSearchClick}
-        >
-            <Search className="mr-2" />
-            <span>Search stocks...</span>
-            <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-        </Button>
+        <StockSearch />
       </div>
       <UserNav />
     </header>
