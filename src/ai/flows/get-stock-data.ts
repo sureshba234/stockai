@@ -74,6 +74,23 @@ const getStockDataTool = ai.defineTool(
             const price = parseFloat(quoteData['05. price']).toFixed(2);
             const change = parseFloat(quoteData['09. change']).toFixed(2);
             const changePercent = parseFloat(quoteData['10. change_percent'].replace('%','')).toFixed(2);
+            const isUp = parseFloat(change) >= 0;
+
+            // Generate AI prediction
+            const predictionPrompt = `
+                You are a financial analyst. Based on the following data for ${overviewData.Name} (${ticker}), provide a short, one-paragraph prediction for the stock's future performance. 
+                Do not use markdown or formatting.
+                Current Price: $${price}
+                Today's Change: ${change} (${changePercent}%)
+                Recent News:
+                ${news.slice(0, 2).map(n => `- ${n.title}`).join('\n')}
+            `;
+            
+            const {text} = await ai.generate({
+                prompt: predictionPrompt,
+                model: 'googleai/gemini-2.0-flash'
+            });
+            const predictions = text || "AI-powered predictions are currently unavailable.";
 
             return {
                 name: overviewData.Name,
@@ -81,11 +98,11 @@ const getStockDataTool = ai.defineTool(
                 price: price,
                 change: change,
                 changePercent: `${changePercent}%`,
-                isUp: parseFloat(change) >= 0,
+                isUp: isUp,
                 chartData,
                 fundamentalsData,
                 news,
-                predictions: "AI-powered predictions are in development. Check back soon for insights."
+                predictions
             };
 
         } catch (error) {
@@ -109,6 +126,7 @@ const getStockDataFlow = ai.defineFlow(
 
 // Helper functions for formatting
 function formatNumber(num: number): string {
+    if (!num || isNaN(num)) return "N/A";
     if (num >= 1_000_000_000_000) {
         return (num / 1_000_000_000_000).toFixed(2) + 'T';
     }
@@ -123,6 +141,7 @@ function formatNumber(num: number): string {
 
 function formatNewsDate(alphaVantageDate: string): string {
     // Format: YYYYMMDDTHHMMSS
+    if (!alphaVantageDate || alphaVantageDate.length < 8) return "N/A";
     const year = alphaVantageDate.substring(0, 4);
     const month = alphaVantageDate.substring(4, 6);
     const day = alphaVantageDate.substring(6, 8);
