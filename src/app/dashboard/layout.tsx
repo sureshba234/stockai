@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Ticker } from "@/components/dashboard/ticker";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { CommandPalette } from "@/components/dashboard/command-palette";
 
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -43,6 +44,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </motion.main>
           </AnimatePresence>
           <Ticker />
+          <CommandPalette />
         </div>
       </SidebarInset>
     </SidebarProvider>
