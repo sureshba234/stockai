@@ -32,19 +32,21 @@ export async function generateMLNotes(input: MLNotesInput): Promise<MLNotesOutpu
   return generateMLNotesFlow(input);
 }
 
-const fetchFeatureImportance = ai.defineTool({
-  name: 'fetchFeatureImportance',
-  description: 'Retrieves the feature importance scores for a given ML model.',
-  inputSchema: z.object({
-    modelName: z.string().describe('The name of the ML model.'),
-  }),
-  outputSchema: z.record(z.string(), z.number()).describe('A map of feature names to their importance scores.'),
+const fetchFeatureImportance = ai.defineTool(
+  {
+    name: 'fetchFeatureImportance',
+    description: 'Retrieves the feature importance scores for a given ML model.',
+    inputSchema: z.object({
+      modelName: z.string().describe('The name of the ML model.'),
+    }),
+    outputSchema: z.record(z.string(), z.number()).describe('A map of feature names to their importance scores.'),
+  },
   async (input) => {
     // Placeholder implementation - replace with actual feature importance retrieval logic
     console.log(`Fetching feature importance for model: ${input.modelName}`);
     return { /* feature: importance score */ };
-  },
-});
+  }
+);
 
 const prompt = ai.definePrompt({
   name: 'generateMLNotesPrompt',
@@ -62,7 +64,7 @@ Consider feature importance when generating feature handling notes. Use the fetc
 Feature Handling Notes:
 {{#tool_call fetchFeatureImportance modelName=modelName}}
 Explainability Notes:
-Confidence Notes:`, // Corrected Handlebars syntax
+Confidence Notes:`,
 });
 
 const generateMLNotesFlow = ai.defineFlow(
