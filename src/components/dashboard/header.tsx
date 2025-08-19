@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -17,8 +18,15 @@ export function DashboardHeader() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [breadcrumbs, setBreadcrumbs] = useState<React.ReactNode[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const generateBreadcrumbs = () => {
       const pathSegments = pathname.split('/').filter(Boolean);
       let currentPath = '';
@@ -53,7 +61,7 @@ export function DashboardHeader() {
       setBreadcrumbs(breadcrumbItems);
     }
     generateBreadcrumbs();
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, isClient]);
 
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -72,7 +80,7 @@ export function DashboardHeader() {
               <Link href="/dashboard">Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
-          {breadcrumbs}
+          {isClient && breadcrumbs}
         </BreadcrumbList>
       </Breadcrumb>
       <div className="relative ml-auto flex-1 md:grow-0">
@@ -80,7 +88,7 @@ export function DashboardHeader() {
         <Input
           type="search"
           placeholder="Search stocks..."
-          className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+          className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearch}
