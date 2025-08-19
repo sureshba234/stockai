@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 function StockPageSkeleton() {
@@ -118,10 +119,14 @@ export default function StocksPage() {
       setError(null);
       try {
         const data = await getStockData({ ticker: queryTicker });
-        setStockData(data);
+        if (data) {
+            setStockData(data);
+        } else {
+            throw new Error(`Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`);
+        }
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
-        setError(e.message || `Failed to fetch data for ${queryTicker}. Please try another symbol.`);
+        setError(e.message || `Failed to fetch data for ${queryTicker}.`);
         toast({
           title: "Error Fetching Data",
           description: e.message || `Failed to fetch data for ${queryTicker}.`,
@@ -152,22 +157,21 @@ export default function StocksPage() {
     return <StockPageSkeleton />;
   }
 
-  if (error && !stockData) {
+  if (error || !stockData) {
     return (
-        <Card className="mt-4">
-          <CardHeader>
-              <CardTitle className="flex items-center gap-2"><AlertCircle /> Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <p>{error}</p>
-          </CardContent>
-      </Card>
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error || "An unknown error occurred while fetching stock data."}
+            <p className="text-xs mt-2">
+                This may be due to the Alpha Vantage API rate limit (free keys are limited). Please try again later or check your API key in the <code>.env</code> file.
+            </p>
+          </AlertDescription>
+        </Alert>
     )
   }
 
-  if (!stockData) {
-      return null;
-  }
 
   return (
     <div className="flex flex-col gap-6">

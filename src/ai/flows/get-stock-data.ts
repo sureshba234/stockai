@@ -8,7 +8,7 @@
 import {ai} from '@/ai/genkit';
 import { StockDataInputSchema, StockDataOutputSchema, type StockDataInput, type StockDataOutput } from '@/ai/schemas/stock-data';
 
-export async function getStockData(input: StockDataInput): Promise<StockDataOutput> {
+export async function getStockData(input: StockDataInput): Promise<StockDataOutput | null> {
   return getStockDataFlow(input);
 }
 
@@ -18,12 +18,13 @@ const getStockDataTool = ai.defineTool(
         name: 'getStockDataTool',
         description: 'Retrieves detailed data for a given stock ticker from Alpha Vantage.',
         inputSchema: StockDataInputSchema,
-        outputSchema: StockDataOutputSchema,
+        outputSchema: z.union([StockDataOutputSchema, z.null()]),
     },
     async ({ ticker }) => {
         const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
         if (!apiKey || apiKey === 'YOUR_API_KEY' || !apiKey.trim()) {
-            throw new Error('Alpha Vantage API key is not configured. Please add it to your .env file.');
+            console.error('Alpha Vantage API key is not configured. Please add it to your .env file.');
+            return null;
         }
 
         const BASE_URL = 'https://www.alphavantage.co/query';
@@ -31,20 +32,16 @@ const getStockDataTool = ai.defineTool(
         try {
             // Fetch company overview for fundamentals and name
             const overviewResponse = await fetch(`${BASE_URL}?function=OVERVIEW&symbol=${ticker}&apikey=${apiKey}`);
-            if (!overviewResponse.ok) {
-                throw new Error(`Alpha Vantage OVERVIEW API request failed with status ${overviewResponse.status}`);
-            }
+            if (!overviewResponse.ok) throw new Error(`Alpha Vantage OVERVIEW API request failed with status ${overviewResponse.status}`);
             const overviewData = await overviewResponse.json();
-            if (overviewData.Note || !overviewData.Symbol) {
+             if (overviewData.Note || !overviewData.Symbol) {
                  console.error("Failed to fetch overview data or API limit reached:", overviewData);
                  throw new Error(`Could not retrieve company overview for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
 
             // Fetch global quote for price, change
             const quoteResponse = await fetch(`${BASE_URL}?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`);
-             if (!quoteResponse.ok) {
-                throw new Error(`Alpha Vantage GLOBAL_QUOTE API request failed with status ${quoteResponse.status}`);
-            }
+             if (!quoteResponse.ok) throw new Error(`Alpha Vantage GLOBAL_QUOTE API request failed with status ${quoteResponse.status}`);
             const quoteData = (await quoteResponse.json())['Global Quote'];
              if (!quoteData || Object.keys(quoteData).length === 0) {
                 console.error("Failed to fetch quote data or API limit reached:", quoteData);
@@ -53,9 +50,7 @@ const getStockDataTool = ai.defineTool(
             
             // Fetch daily time series for the chart
             const chartResponse = await fetch(`${BASE_URL}?function=TIME_SERIES_DAILY&symbol=${ticker}&apikey=${apiKey}`);
-             if (!chartResponse.ok) {
-                throw new Error(`Alpha Vantage TIME_SERIES_DAILY API request failed with status ${chartResponse.status}`);
-            }
+             if (!chartResponse.ok) throw new Error(`Alpha Vantage TIME_SERIES_DAILY API request failed with status ${chartResponse.status}`);
             const chartDataRaw = (await chartResponse.json())['Time Series (Daily)'];
             if (!chartDataRaw) {
               console.error("Failed to fetch chart data or API limit reached:", chartDataRaw);
@@ -64,9 +59,7 @@ const getStockDataTool = ai.defineTool(
 
             // Fetch news
             const newsResponse = await fetch(`${BASE_URL}?function=NEWS_SENTIMENT&tickers=${ticker}&limit=5&apikey=${apiKey}`);
-            if (!newsResponse.ok) {
-                throw new Error(`Alpha Vantage NEWS_SENTIMENT API request failed with status ${newsResponse.status}`);
-            }
+            if (!newsResponse.ok) throw new Error(`Alpha Vantage NEWS_SENTIMENT API request failed with status ${newsResponse.status}`);
             const newsData = (await newsResponse.json()).feed || [];
 
             // Process and format the data to match our schema
@@ -128,10 +121,7 @@ const getStockDataTool = ai.defineTool(
 
         } catch (error) {
             console.error(`API call failed for ${ticker}:`, error);
-            if (error instanceof Error) {
-                throw new Error(error.message);
-            }
-            throw new Error(`Failed to fetch complete data for ${ticker}. The API may be temporarily unavailable or the symbol is invalid.`);
+            return null;
         }
     }
 );
@@ -140,7 +130,7 @@ const getStockDataFlow = ai.defineFlow(
   {
     name: 'getStockDataFlow',
     inputSchema: StockDataInputSchema,
-    outputSchema: StockDataOutputSchema,
+    outputSchema: z.union([StockDataOutputSchema, z.null()]),
   },
   async (input) => {
     return await getStockDataTool(input);
