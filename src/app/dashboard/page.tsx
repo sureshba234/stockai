@@ -10,12 +10,6 @@ import type { StockDataOutput } from '@/ai/schemas/stock-data';
 import { useState, useEffect } from 'react';
 import { getStockData } from '@/ai/flows/get-stock-data';
 import { Sheet, BarChart2 } from 'lucide-react';
-import { stockAgent } from '@/ai/flows/stock-agent';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const features = [
@@ -126,105 +120,6 @@ function WatchlistCard() {
   );
 }
 
-type Message = {
-  role: 'user' | 'agent';
-  content: string;
-};
-
-function AIAgentCard() {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [query, setQuery] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const { toast } = useToast();
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-
-        const userMessage: Message = { role: 'user', content: query };
-        setMessages(prev => [...prev, userMessage]);
-        setQuery('');
-        setIsLoading(true);
-
-        try {
-            const result = await stockAgent({ query });
-            const agentMessage: Message = { role: 'agent', content: result.answer };
-            setMessages(prev => [...prev, agentMessage]);
-        } catch (error) {
-            console.error("AI Agent Error:", error);
-            toast({
-                title: "Error",
-                description: "The AI agent failed to respond. Please check your API key in settings or try again.",
-                variant: "destructive"
-            });
-            setMessages(prev => prev.slice(0, -1)); // Remove the user message on error
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <Card className="col-span-1 lg:col-span-2 flex flex-col">
-            <CardHeader>
-                <CardTitle>Ask AI Agent</CardTitle>
-                <CardDescription>Your personal financial assistant. Ask about stocks, markets, or investment ideas.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col gap-4">
-                 <ScrollArea className="h-[200px] pr-4">
-                    <div className="space-y-4">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : '')}>
-                                {msg.role === 'agent' && (
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src="/icon-192x192.png" alt="AI Agent" data-ai-hint="logo" />
-                                        <AvatarFallback>AI</AvatarFallback>
-                                    </Avatar>
-                                )}
-                                <div className={cn(
-                                    "rounded-lg px-3 py-2 text-sm",
-                                    msg.role === 'agent' ? 'bg-muted' : 'bg-primary text-primary-foreground'
-                                )}>
-                                    <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
-                                </div>
-                                {msg.role === 'user' && (
-                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
-                                        <AvatarFallback>U</AvatarFallback>
-                                    </Avatar>
-                                )}
-                            </div>
-                        ))}
-                         {isLoading && (
-                            <div className="flex items-start gap-3">
-                                 <Avatar className="h-8 w-8">
-                                        <AvatarImage src="/icon-192x192.png" alt="AI Agent" />
-                                        <AvatarFallback>AI</AvatarFallback>
-                                    </Avatar>
-                                <div className="bg-muted rounded-lg px-3 py-2 text-sm flex items-center">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                 </ScrollArea>
-            </CardContent>
-             <CardFooter>
-                 <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
-                    <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="e.g., 'What are the top 5G stocks?'"
-                        disabled={isLoading}
-                    />
-                    <Button type="submit" size="icon" disabled={isLoading}>
-                        <Send />
-                    </Button>
-                </form>
-            </CardFooter>
-        </Card>
-    )
-}
-
 
 export default function DashboardPage() {
   return (
@@ -235,9 +130,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <AIAgentCard />
         <WatchlistCard />
-        {features.slice(0, 1).map((feature) => {
+        {features.map((feature) => {
           const Icon = feature.icon;
           return (
             <Link key={feature.title} href={feature.href} className="flex">
