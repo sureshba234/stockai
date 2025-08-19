@@ -37,20 +37,20 @@ const fetchFeatureImportance = ai.defineTool(
     description: 'Retrieves the feature importance scores for a given ML model.',
     inputSchema: z.object({
       modelName: z.string().describe('The name of the ML model.'),
+      features: z.array(z.string()).describe('The list of features to get importance for.')
     }),
-    outputSchema: z.record(z.string(), z.number()).describe('A map of feature names to their importance scores.'),
+    outputSchema: z.record(z.string(), z.number()).describe('A map of feature names to their importance scores (0 to 1).'),
   },
   async (input) => {
-    // Placeholder implementation - replace with actual feature importance retrieval logic
+    // Placeholder implementation for feature importance.
+    // In a real scenario, this would fetch actual SHAP or permutation importance scores from a model registry.
     console.log(`Fetching feature importance for model: ${input.modelName}`);
-    // Returning dummy data as the actual implementation is a placeholder.
-    // In a real scenario, this would fetch actual importance scores.
-    const dummyData: Record<string, number> = {};
-    const features = input.modelName.split(',').map(s => s.trim());
-    features.forEach(feature => {
-      dummyData[feature] = Math.random();
+    const importanceScores: Record<string, number> = {};
+    input.features.forEach(feature => {
+      // Assign a random importance score for demonstration purposes.
+      importanceScores[feature.trim()] = parseFloat(Math.random().toFixed(4));
     });
-    return dummyData;
+    return importanceScores;
   }
 );
 
@@ -65,7 +65,7 @@ Model Name: {{{modelName}}}
 Feature List: {{{featureList}}}
 Performance Metrics: {{{performanceMetrics}}}
 
-When generating the feature handling notes, you MUST use the fetchFeatureImportance tool to get the feature importance scores for the specified model and incorporate that information into the notes.
+When generating the feature handling and explainability notes, you MUST use the fetchFeatureImportance tool to get the feature importance scores for the specified model and incorporate that information into the notes. Discuss the most impactful features based on the scores.
 `,
 });
 
@@ -76,7 +76,11 @@ const generateMLNotesFlow = ai.defineFlow(
     outputSchema: MLNotesOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
+    const { output, history } = await prompt({
+        ...input,
+        // Also pass the list of features to the tool.
+        features: input.featureList.split(',').map(f => f.trim()),
+    });
     return output!;
   }
 );

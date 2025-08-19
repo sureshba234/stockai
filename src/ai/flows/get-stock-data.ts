@@ -31,7 +31,8 @@ async function generateAIPrediction(ticker: string, name: string, price: string,
             prompt: predictionPrompt,
             model: 'googleai/gemini-2.0-flash'
         });
-        return text || "AI-powered predictions are currently unavailable.";
+        const predictionText = text || "AI-powered predictions are currently unavailable.";
+        return `${predictionText} This is not financial advice. All predictions are for informational purposes only.`;
     } catch (e) {
         console.error("AI prediction generation failed", e);
         return "AI-powered predictions are currently unavailable at this time.";
