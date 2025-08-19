@@ -122,14 +122,20 @@ export default function StocksPage() {
         if (data) {
             setStockData(data);
         } else {
-            throw new Error(`Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`);
+            const errorMessage = `Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`;
+            setError(errorMessage);
+            toast({
+              title: "Error Fetching Data",
+              description: errorMessage,
+              variant: "destructive"
+            });
         }
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
-        setError(e.message || `Failed to fetch data for ${queryTicker}.`);
+        setError(e.message || `An unexpected error occurred while fetching data for ${queryTicker}.`);
         toast({
           title: "Error Fetching Data",
-          description: e.message || `Failed to fetch data for ${queryTicker}.`,
+          description: e.message || `An unexpected error occurred.`,
           variant: "destructive"
         })
       } finally {
@@ -261,6 +267,7 @@ export default function StocksPage() {
                                 <Card key={item.label}>
                                     <CardHeader className="pb-2">
                                         <CardDescription>{item.label}</CardDescription>
+
                                         <CardTitle className="text-2xl">{item.value}</CardTitle>
                                     </CardHeader>
                                 </Card>
