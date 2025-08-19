@@ -76,7 +76,7 @@ export const stockData = [
     { name: "Intuitive Surgical", ticker: "ISRG", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/intuitive.com" },
     { name: "CVS Health", ticker: "CVS", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/cvshealth.com" },
     { name: "Walgreens Boots Alliance", ticker: "WBA", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/walgreensbootsalliance.com" },
-    { name: "Anthem", ticker: "ANTM", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/antheminc.com" },
+    { name: "Anthem", ticker: "ELV", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/elevancehealth.com" },
     { name: "Cigna", ticker: "CI", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/cigna.com" },
     { name: "Humana", ticker: "HUM", sector: "Healthcare", logoUrl: "https://logo.clearbit.com/humana.com" },
     { name: "Comcast", ticker: "CMCSA", sector: "Communication Services", logoUrl: "https://logo.clearbit.com/comcast.com" },
@@ -144,7 +144,7 @@ export const stockData = [
     { name: "HDFC Life Insurance", ticker: "HDFCLIFE.NS", sector: "Financial Services", logoUrl: "https://logo.clearbit.com/hdfclife.com" },
     { name: "IndusInd Bank", ticker: "INDUSINDBK.NS", sector: "Financial Services", logoUrl: "https://logo.clearbit.com/indusind.com" },
     { name: "Tech Mahindra", ticker: "TECHM.NS", sector: "Technology", logoUrl: "https://logo.clearbit.com/techmahindra.com" },
-    { name: "Zomato", ticker: "ZOMATO.NS", sector: "Consumer Cyclical", logoUrl: "https://logo.clearbit.com/zomato.com" },
+    { name: "Zomato", ticker: "ZOMATO.NS", sector: "Technology", logoUrl: "https://logo.clearbit.com/zomato.com" },
     { name: "Paytm (One97 Communications)", ticker: "PAYTM.NS", sector: "Technology", logoUrl: "https://logo.clearbit.com/paytm.com" },
     { name: "Vedanta", ticker: "VEDL.NS", sector: "Basic Materials", logoUrl: "https://logo.clearbit.com/vedantalimited.com" },
     { name: "DLF", ticker: "DLF.NS", sector: "Real Estate", logoUrl: "https://logo.clearbit.com/dlf.in" },
@@ -152,3 +152,5 @@ export const stockData = [
     { name: "Indian Oil Corporation", ticker: "IOC.NS", sector: "Energy", logoUrl: "https://logo.clearbit.com/iocl.com" },
     { name: "Bharat Petroleum", ticker: "BPCL.NS", sector: "Energy", logoUrl: "https://logo.clearbit.com/bharatpetroleum.in" }
 ];
+
+    
