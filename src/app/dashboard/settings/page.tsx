@@ -19,6 +19,7 @@ const profileFormSchema = z.object({
 });
 
 const apiKeysFormSchema = z.object({
+    openaiApiKey: z.string().optional(),
     polygonApiKey: z.string().optional(),
     financialModelingPrepApiKey: z.string().optional(),
     finnhubApiKey: z.string().optional(),
@@ -52,6 +53,7 @@ export default function SettingsPage() {
   const apiKeysForm = useForm<ApiKeysFormData>({
     resolver: zodResolver(apiKeysFormSchema),
     defaultValues: { 
+        openaiApiKey: "",
         polygonApiKey: "",
         financialModelingPrepApiKey: "",
         finnhubApiKey: "", 
@@ -98,9 +100,13 @@ export default function SettingsPage() {
   
   function onApiKeysSubmit(data: ApiKeysFormData) {
     localStorage.setItem("apiKeys", JSON.stringify(data));
+    // NOTE: This is NOT a secure way to handle API keys for a real production app.
+    // This is a workaround for the demo environment. A real app would send this
+    // to a secure backend that sets an HttpOnly cookie or uses a secure secret manager.
+    // To make this work for the demo, we are asking the user to refresh.
     toast({
       title: "API Keys Saved",
-      description: "Your API keys have been saved locally. Note: For production, use a secure backend to store keys.",
+      description: "Your API keys have been saved locally. Please refresh the page for them to take effect.",
     });
   }
   
@@ -156,11 +162,19 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
-          <CardDescription>Manage your API keys for financial data providers. Keys are stored in your browser's local storage.</CardDescription>
+          <CardDescription>Manage your API keys for financial data providers. Keys are stored in your browser's local storage and require a page refresh to apply.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...apiKeysForm}>
             <form onSubmit={apiKeysForm.handleSubmit(onApiKeysSubmit)} className="space-y-6">
+                <FormField control={apiKeysForm.control} name="openaiApiKey" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>OpenAI API Key (Primary for Agent)</FormLabel>
+                        <FormControl><Input type="password" placeholder="sk-..." {...field} /></FormControl>
+                        <FormDescription>Used for the conversational AI agent on the dashboard.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField control={apiKeysForm.control} name="polygonApiKey" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Polygon.io API Key (Primary)</FormLabel>
