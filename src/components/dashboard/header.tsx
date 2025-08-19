@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -21,11 +22,17 @@ function StockSearch() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const runCommand = useCallback((command: () => unknown) => {
-    setIsOpen(false);
-    command();
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
+
+  const handleSelect = (ticker: string) => {
+    router.push(`/dashboard/stocks?q=${ticker}`);
+    setQuery("");
+    setIsOpen(false);
+  };
 
   const filteredStocks = React.useMemo(() => {
     if (debouncedQuery.length === 0) return [];
@@ -47,17 +54,19 @@ function StockSearch() {
 
   return (
     <div className="relative" ref={searchRef}>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          className="w-full pl-9 pr-4 h-10 border rounded-lg md:w-[200px] lg:w-[336px]"
-          placeholder="Search stocks..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setIsOpen(true)}
-        />
-      </div>
-        {isOpen && (
+       <Command shouldFilter={false} className="overflow-visible bg-transparent">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <CommandInput
+            as={Input}
+            value={query}
+            onValueChange={setQuery}
+            onFocus={() => setIsOpen(true)}
+            placeholder="Search stocks..."
+            className="w-full pl-9 pr-4 h-10 border rounded-lg md:w-[200px] lg:w-[336px]"
+          />
+        </div>
+        {isMounted && isOpen && (
            <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
             <CommandList>
                 {filteredStocks.length > 0 ? (
@@ -66,9 +75,7 @@ function StockSearch() {
                       <CommandItem
                         key={stock.ticker}
                         value={stock.ticker}
-                        onSelect={() => {
-                          runCommand(() => router.push(`/dashboard/stocks?q=${stock.ticker}`))
-                        }}
+                        onSelect={() => handleSelect(stock.ticker)}
                         className="cursor-pointer"
                       >
                         <LineChart className="mr-2 h-4 w-4" />
@@ -82,6 +89,7 @@ function StockSearch() {
             </CommandList>
            </div>
         )}
+       </Command>
     </div>
   )
 }
