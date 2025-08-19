@@ -14,6 +14,7 @@ import React from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { stockData } from "@/lib/stocks";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Badge } from "@/components/ui/badge";
 
 
 function StockSearch() {
@@ -78,7 +79,12 @@ function StockSearch() {
                       className="cursor-pointer"
                     >
                       <LineChart className="mr-2 h-4 w-4" />
-                      <span>{stock.name} ({stock.ticker})</span>
+                      <div className="flex-1">
+                        <span>{stock.name} ({stock.ticker})</span>
+                      </div>
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        {stock.sector}
+                      </Badge>
                     </CommandItem>
                   ))}
                 </CommandGroup>
