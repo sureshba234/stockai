@@ -99,13 +99,13 @@ async function fetchFromPolygon(ticker: string, apiKey: string): Promise<Omit<St
     }
 
     const to = getTodayDate();
-    const from = getDateMonthsAgo(3);
+    const from = getDateMonthsAgo(120); // 10 years
 
     const [details, prevDay, news, aggregates] = await Promise.all([
         get(`/v3/reference/tickers/${ticker}`).catch(() => null),
         get(`/v2/aggs/ticker/${ticker}/prev`).catch(() => null),
         get(`/v2/reference/news`, { ticker }).catch(() => null),
-        get(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}`, { sort: 'asc', limit: '90' }).catch(() => null)
+        get(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}`, { sort: 'asc', limit: '5000' }).catch(() => null)
     ]);
 
     const profile = details?.results;
@@ -161,7 +161,7 @@ async function fetchFromFMP(ticker: string, apiKey: string): Promise<Omit<StockD
     }
 
     const to = getTodayDate();
-    const from = getDateMonthsAgo(3);
+    const from = getDateMonthsAgo(120); // 10 years
 
     const [profile, quote, news, history] = await Promise.all([
         get(`/v3/profile/${ticker}`).catch(() => null),
@@ -234,7 +234,7 @@ async function fetchFromFinnhub(ticker: string, apiKey: string): Promise<Omit<St
     const candle = await get('/stock/candle', {
       symbol: ticker,
       resolution: 'D',
-      from: Math.floor(new Date(getDateMonthsAgo(3)).getTime() / 1000).toString(),
+      from: Math.floor(new Date(getDateMonthsAgo(120)).getTime() / 1000).toString(),
       to: Math.floor(new Date().getTime() / 1000).toString(),
     }).catch(() => null);
 
@@ -285,7 +285,7 @@ async function fetchFromTwelveData(ticker: string, apiKey: string): Promise<Omit
         get('/profile', { symbol: ticker }).catch(() => null),
         get('/quote', { symbol: ticker }).catch(() => null),
         get('/news', { symbol: ticker, limit: '5'}).catch(() => null),
-        get('/time_series', { symbol: ticker, interval: '1day', outputsize: '90' }).catch(() => null),
+        get('/time_series', { symbol: ticker, interval: '1day', outputsize: '5000' }).catch(() => null),
     ]);
 
     if (!profile?.name || !quote?.change) return null;
@@ -337,7 +337,7 @@ async function fetchFromAlphaVantage(ticker: string, apiKey: string): Promise<Om
     const [overviewData, quoteData, chartDataRaw, newsData] = await Promise.all([
         get({ function: 'OVERVIEW', symbol: ticker }).catch(() => null),
         get({ function: 'GLOBAL_QUOTE', symbol: ticker }).then(d => d?.['Global Quote']).catch(() => null),
-        get({ function: 'TIME_SERIES_DAILY', symbol: ticker }).then(d => d?.['Time Series (Daily)']).catch(() => null),
+        get({ function: 'TIME_SERIES_DAILY_ADJUSTED', symbol: ticker, outputsize: 'full' }).then(d => d?.['Time Series (Daily)']).catch(() => null),
         get({ function: 'NEWS_SENTIMENT', tickers: ticker, limit: 5 }).then(d => d?.feed || []).catch(() => []),
     ]);
 
@@ -345,10 +345,10 @@ async function fetchFromAlphaVantage(ticker: string, apiKey: string): Promise<Om
         return null;
     }
 
-    const chartData = Object.entries(chartDataRaw).slice(0, 90).map(([date, data]) => ({
+    const chartData = Object.entries(chartDataRaw).map(([date, data]) => ({
         date,
         price: parseFloat((data as any)['4. close']),
-        volume: parseInt((data as any)['5. volume'], 10)
+        volume: parseInt((data as any)['6. volume'], 10)
     })).reverse();
     
     const news = (newsData || []).map((item: any) => ({
@@ -356,7 +356,7 @@ async function fetchFromAlphaVantage(ticker: string, apiKey: string): Promise<Om
         publishedAt: formatNewsDate(item.time_published),
     }));
     
-    const rawChangePercent = quoteData['10. change_percent'];
+    const rawChangePercent = quoteData['10. change percent'];
     const price = parseFloat(quoteData['05. price']).toFixed(2);
     const change = parseFloat(quoteData['09. change']).toFixed(2);
     const changePercent = rawChangePercent ? parseFloat(rawChangePercent.replace('%','')).toFixed(2) : '0.00';
@@ -388,7 +388,7 @@ async function fetchFromMarketstack(ticker: string, apiKey: string): Promise<Omi
     };
     
     const [eodData, tickerData, newsData] = await Promise.all([
-        get('/eod', { symbols: ticker, limit: '90' }).catch(() => null),
+        get('/eod', { symbols: ticker, limit: '5000' }).catch(() => null),
         get('/tickers', { symbols: ticker }).catch(() => null),
         get('/news', { tickers: ticker, limit: '5' }).catch(() => null)
     ]);

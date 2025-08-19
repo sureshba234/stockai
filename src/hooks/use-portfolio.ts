@@ -57,15 +57,17 @@ export function usePortfolio() {
   };
   
   const addTransaction = (transaction: Transaction) => {
-    const newTransactions = [...transactions, transaction];
+    const currentTransactions = loadTransactions();
+    const newTransactions = [...currentTransactions, transaction];
     saveTransactions(newTransactions);
-    // No need to call processTransactions here, useEffect will handle it
+    processTransactions(newTransactions);
   };
 
   const removeTransaction = (transactionId: string) => {
-    const newTransactions = transactions.filter(tx => tx.id !== transactionId);
+    const currentTransactions = loadTransactions();
+    const newTransactions = currentTransactions.filter(tx => tx.id !== transactionId);
     saveTransactions(newTransactions);
-    // No need to call processTransactions here, useEffect will handle it
+    processTransactions(newTransactions);
   };
   
   const processTransactions = useCallback(async (txs: Transaction[]) => {
@@ -87,8 +89,8 @@ export function usePortfolio() {
               currentHolding.totalCost += tx.shares * tx.price;
           } else {
               const avgCost = currentHolding.shares > 0 ? currentHolding.totalCost / currentHolding.shares : 0;
-              currentHolding.shares -= tx.shares;
               currentHolding.totalCost -= tx.shares * avgCost; // Reduce cost basis proportionally
+              currentHolding.shares -= tx.shares;
               if (currentHolding.shares < 1e-9) { // Handle floating point inaccuracies
                   currentHolding.shares = 0;
                   currentHolding.totalCost = 0;
@@ -148,15 +150,13 @@ export function usePortfolio() {
   useEffect(() => {
     const txs = loadTransactions();
     setTransactions(txs);
-  }, [loadTransactions]);
-  
-  useEffect(() => {
-      processTransactions(transactions);
-  }, [transactions, processTransactions])
+    processTransactions(txs);
+  }, [loadTransactions, processTransactions]);
   
   const refreshPortfolio = useCallback(() => {
-    processTransactions(transactions);
-  }, [transactions, processTransactions]);
+    const txs = loadTransactions();
+    processTransactions(txs);
+  }, [loadTransactions, processTransactions]);
 
   return { transactions, holdings, summary, isLoading, addTransaction, removeTransaction, refreshPortfolio };
 }

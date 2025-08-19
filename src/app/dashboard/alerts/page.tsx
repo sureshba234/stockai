@@ -213,7 +213,7 @@ export default function AlertsPage() {
                     Add Condition
                   </Button>
                 </div>
-                 <FormMessage>{form.formState.errors.conditions?.message}</FormMessage>
+                 <FormMessage>{form.formState.errors.conditions?.root?.message || form.formState.errors.conditions?.message}</FormMessage>
               </div>
 
                 <Separator />
@@ -239,7 +239,7 @@ export default function AlertsPage() {
                                     onClick={() => {
                                         const newValue = isSelected
                                             ? field.value.filter(v => v !== channel.id)
-                                            : [...field.value, channel.id];
+                                            : [...(field.value || []), channel.id];
                                         field.onChange(newValue);
                                     }}
                                 >

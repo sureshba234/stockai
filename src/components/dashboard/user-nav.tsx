@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useTheme } from "next-themes"
@@ -16,7 +17,7 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
-import { Monitor, Moon, Sun, Settings, LifeBuoy, LogOut } from "lucide-react"
+import { Monitor, Moon, Sun, Settings, LifeBuoy, LogOut, User } from "lucide-react"
 import Link from "next/link"
 
 export function UserNav() {
@@ -44,37 +45,48 @@ export function UserNav() {
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/dashboard/settings">
+              <User className="mr-2" />
+              <span>Profile</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/settings">
               <Settings className="mr-2" />
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Monitor className="mr-2" />
-              <span>Theme</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  <Sun className="mr-2" />
-                  <span>Light</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  <Moon className="mr-2" />
-                  <span>Dark</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  <Monitor className="mr-2" />
-                  <span>System</span>
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-           <DropdownMenuItem>
-            <LifeBuoy className="mr-2" />
-            <span>Support</span>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/community">
+                <LifeBuoy className="mr-2" />
+                <span>Support</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+         <DropdownMenuGroup>
+            <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                <Monitor className="mr-2" />
+                <span>Theme</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                    <Sun className="mr-2" />
+                    <span>Light</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    <Moon className="mr-2" />
+                    <span>Dark</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>
+                    <Monitor className="mr-2" />
+                    <span>System</span>
+                    </DropdownMenuItem>
+                </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+            </DropdownMenuSub>
+         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <LogOut className="mr-2" />
