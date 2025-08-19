@@ -9,7 +9,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper } from "lucide-react";
+import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavLink = {
@@ -22,10 +22,8 @@ const mainNavLinks: NavLink[] = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/markets", label: "Markets", icon: LayoutDashboard },
   { href: "/dashboard/stocks", label: "Stocks", icon: LineChart },
-  { href: "/dashboard/predictions", label: "Predictions", icon: BarChart },
-  { href: "/dashboard/analytics", label: "Analytics", icon: Sheet },
+  { href: "/dashboard/watchlist", label: "Watchlist", icon: Star },
   { href: "/dashboard/portfolio", label: "Portfolio", icon: Wallet },
-  { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
   { href: "/dashboard/news", label: "News", icon: Newspaper },
 ];
 
@@ -38,7 +36,10 @@ const secondaryNavLinks: NavLink[] = [
 
 const genAILinks: NavLink[] = [
   { href: "/dashboard/ml-notes", label: "ML Notes", icon: BotMessageSquare },
+  { href: "/dashboard/predictions", label: "Predictions", icon: BarChart },
+  { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
   { href: "/dashboard/relations", label: "Asset Relations", icon: LinkIcon },
+  { href: "/dashboard/analytics", label: "Analytics", icon: Sheet },
 ];
 
 export const navigationLinks = [mainNavLinks, genAILinks, secondaryNavLinks];
@@ -53,7 +54,7 @@ export function SidebarNav() {
           {mainNavLinks.map((link) => (
             <SidebarMenuItem key={link.href}>
               <Link href={link.href}>
-                <SidebarMenuButton isActive={pathname === link.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')}>
                   <link.icon className="h-4 w-4" />
                   <span>{link.label}</span>
                 </SidebarMenuButton>
@@ -69,7 +70,7 @@ export function SidebarNav() {
           {genAILinks.map((link) => (
             <SidebarMenuItem key={link.href}>
               <Link href={link.href}>
-                <SidebarMenuButton isActive={pathname === link.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(link.href)}>
                   <link.icon className="h-4 w-4" />
                   <span>{link.label}</span>
                 </SidebarMenuButton>
@@ -85,7 +86,7 @@ export function SidebarNav() {
           {secondaryNavLinks.map((link) => (
             <SidebarMenuItem key={link.href}>
               <Link href={link.href}>
-                <SidebarMenuButton isActive={pathname === link.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(link.href)}>
                   <link.icon className="h-4 w-4" />
                   <span>{link.label}</span>
                 </SidebarMenuButton>
