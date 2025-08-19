@@ -42,14 +42,22 @@ const fetchFeatureImportance = ai.defineTool(
     outputSchema: z.record(z.string(), z.number()).describe('A map of feature names to their importance scores (0 to 1).'),
   },
   async (input) => {
-    // Placeholder implementation for feature importance.
     // In a real scenario, this would fetch actual SHAP or permutation importance scores from a model registry.
     console.log(`Fetching feature importance for model: ${input.modelName}`);
     const importanceScores: Record<string, number> = {};
-    input.features.forEach(feature => {
-      // Assign a random importance score for demonstration purposes.
-      importanceScores[feature.trim()] = parseFloat(Math.random().toFixed(4));
+    // Generate more realistic, but still mock, importance scores.
+    const sortedFeatures = [...input.features].sort();
+    let remainingImportance = 1.0;
+    sortedFeatures.forEach((feature, index) => {
+        // Assign decreasing importance for demonstration purposes.
+        const score = remainingImportance * (Math.random() * 0.4 + 0.3); // take 30-70% of what's left
+        importanceScores[feature.trim()] = parseFloat(score.toFixed(4));
+        remainingImportance -= score;
     });
+    // Distribute any tiny remaining importance to the last feature
+    if (sortedFeatures.length > 0) {
+        importanceScores[sortedFeatures[sortedFeatures.length - 1].trim()] += remainingImportance;
+    }
     return importanceScores;
   }
 );

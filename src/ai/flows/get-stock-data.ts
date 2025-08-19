@@ -21,7 +21,7 @@ async function generateAIPrediction(ticker: string, name: string, price: string,
         You are a financial analyst. Based on the following data for ${name} (${ticker}), provide a short, one-paragraph prediction for the stock\'s future performance. 
         Do not use markdown or formatting. Be concise.
         Current Price: $${price}
-        Today\'s Change: ${change} (${changePercent}%)
+        Today\'s Change: ${change} (${changePercent})
         Recent News:
         ${news.slice(0, 2).map((n: any) => `- ${n.title}`).join('\n')}
     `;
@@ -32,6 +32,7 @@ async function generateAIPrediction(ticker: string, name: string, price: string,
             model: 'googleai/gemini-2.0-flash'
         });
         const predictionText = text || "AI-powered predictions are currently unavailable.";
+        // Add disclaimer here
         return `${predictionText} This is not financial advice. All predictions are for informational purposes only.`;
     } catch (e) {
         console.error("AI prediction generation failed", e);
