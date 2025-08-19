@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,13 +17,21 @@ import { cn } from "@/lib/utils";
 function StockPageSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-baseline gap-4">
-        <div>
-          <Skeleton className="h-9 w-64 mb-2" />
-          <div className="flex items-baseline gap-2 mt-1">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-7 w-32" />
-          </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-baseline justify-between">
+            <div>
+              <Skeleton className="h-9 w-64 mb-2" />
+              <div className="flex items-baseline gap-2 mt-1">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-7 w-32" />
+              </div>
+            </div>
+             <div className="flex items-center gap-2">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+            </div>
         </div>
       </div>
        <Card>
@@ -122,10 +130,10 @@ export default function StocksPage() {
     fetchData();
   }, [searchParams]);
 
-  const handleAddAlert = () => {
+  const handleActionClick = (action: string) => {
     toast({
-      title: "Alert Added (Simulated)",
-      description: `You will be notified of significant price movements for ${stockData?.ticker}.`,
+      title: `${action} (Simulated)`,
+      description: `The ${action.toLowerCase()} action was triggered for ${stockData?.ticker}.`,
     });
   };
 
@@ -158,22 +166,36 @@ export default function StocksPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{stockData.name} ({stockData.ticker})</h1>
-            <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-2xl font-semibold">${stockData.price}</p>
-              <p className={`text-lg font-semibold ${stockData.isUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                {stockData.isUp ? '+' : ''}{stockData.change} ({stockData.changePercent})
-              </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{stockData.name} ({stockData.ticker})</h1>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-2xl font-semibold">${stockData.price}</p>
+                <p className={`text-lg font-semibold ${stockData.isUp ? "text-emerald-500" : "text-red-500"}`}>
+                  {stockData.isUp ? '+' : ''}{stockData.change} ({stockData.changePercent})
+                </p>
+              </div>
             </div>
-          </div>
         </div>
-        <Button variant="outline" onClick={handleAddAlert}>
-          <Bell className="mr-2 h-4 w-4" />
-          Add Alert
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => handleActionClick('Add to Watchlist')}>
+                <Star className="mr-2" />
+                Watchlist
+            </Button>
+            <Button variant="outline" onClick={() => handleActionClick('Add Alert')}>
+                <Bell className="mr-2" />
+                Alert
+            </Button>
+            <Button variant="outline" onClick={() => handleActionClick('Compare')}>
+                <GitCompareArrows className="mr-2" />
+                Compare
+            </Button>
+            <Button variant="outline" onClick={() => handleActionClick('Export Data')}>
+                <Download className="mr-2" />
+                Export
+            </Button>
+        </div>
       </div>
 
       <Card>
@@ -294,3 +316,5 @@ export default function StocksPage() {
     </div>
   );
 }
+
+    
