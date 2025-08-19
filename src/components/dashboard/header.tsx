@@ -8,43 +8,111 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import React from 'react';
+import { stockData } from "@/lib/stocks";
+import { Card } from "@/components/ui/card";
 
 export function DashboardHeader() {
   const [isClient, setIsClient] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim() !== '') {
-      router.push(`/dashboard/stocks?q=${searchQuery.trim()}`);
-    }
-  };
-
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-       <SidebarTrigger className="md:hidden" />
-        {isClient && <DashboardBreadcrumb />}
+      <SidebarTrigger className="md:hidden" />
+      {isClient && <DashboardBreadcrumb />}
       <div className="relative ml-auto flex-1 md:grow-0">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search stocks..."
-          className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleSearch}
-        />
+        <StockSearch />
       </div>
       <UserNav />
     </header>
   );
 }
+
+
+function StockSearch() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<{ name: string; ticker: string }[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
+  const router = useRouter();
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchQuery.length > 1) {
+      const filteredStocks = stockData
+        .filter(
+          (stock) =>
+            stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            stock.ticker.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 10); // Limit to 10 suggestions
+      setSuggestions(filteredStocks);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsFocused(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [searchRef]);
+
+  const handleSelectStock = (ticker: string) => {
+    setSearchQuery("");
+    setSuggestions([]);
+    setIsFocused(false);
+    router.push(`/dashboard/stocks?q=${ticker}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim() !== '') {
+        handleSelectStock(searchQuery.trim().toUpperCase())
+    }
+  };
+
+
+  return (
+    <div className="relative" ref={searchRef}>
+      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Input
+        type="search"
+        placeholder="Search stocks..."
+        className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onKeyDown={handleKeyDown}
+      />
+      {isFocused && suggestions.length > 0 && (
+        <Card className="absolute top-full mt-2 w-full rounded-lg border bg-background shadow-lg z-50">
+          <ul>
+            {suggestions.map((stock) => (
+              <li
+                key={stock.ticker}
+                className="cursor-pointer p-2 hover:bg-accent"
+                onClick={() => handleSelectStock(stock.ticker)}
+              >
+                <div className="font-bold">{stock.ticker}</div>
+                <div className="text-sm text-muted-foreground">{stock.name}</div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
