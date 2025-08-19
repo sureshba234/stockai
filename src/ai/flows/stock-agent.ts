@@ -31,17 +31,11 @@ export async function stockAgent(input: StockAgentInput): Promise<StockAgentOutp
 
 const agentPrompt = ai.definePrompt({
   name: 'stockAgentPrompt',
-  input: {schema: StockAgentInputSchema},
-  output: {schema: StockAgentOutputSchema},
-  tools: [getStockData, getNewsAndSentiment],
-  prompt: `You are a friendly and helpful financial AI assistant. Your name is Insight.
+  system: `You are a friendly and helpful financial AI assistant. Your name is Insight.
   Your goal is to provide insightful, accurate, and easy-to-understand answers to questions about stocks, markets, and investment ideas.
   You MUST use the tools provided (getStockData, getNewsAndSentiment) to gather real-time information to support your answers.
   Do not provide financial advice. Always include a disclaimer that your answers are for informational purposes only.
-  Keep your answers concise and well-formatted. Use markdown for readability where appropriate.
-
-  User query: {{{query}}}
-  `,
+  Keep your answers concise and well-formatted. Use markdown for readability where appropriate.`,
 });
 
 
@@ -51,12 +45,21 @@ const stockAgentFlow = ai.defineFlow(
     inputSchema: StockAgentInputSchema,
     outputSchema: StockAgentOutputSchema,
   },
-  async input => {
+  async (input) => {
     // Determine which model to use based on the environment variable.
     // We pass the model as a string identifier, letting Genkit handle the routing.
     const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
     
-    const {output} = await agentPrompt(input, { model });
+    const { output } = await agentPrompt.generate({
+        model,
+        input: {
+            query: input.query
+        },
+        tools: [getStockData, getNewsAndSentiment],
+        output: {
+            schema: StockAgentOutputSchema,
+        },
+    });
 
     return output!;
   }

@@ -1,7 +1,7 @@
 'use server';
 import {genkit, type GenkitPlugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {openai} from 'genkitx-openai';
+import {openAI} from 'genkitx-openai';
 
 const plugins: GenkitPlugin[] = [googleAI()];
 
@@ -9,7 +9,7 @@ const plugins: GenkitPlugin[] = [googleAI()];
 // We build the array of plugins before passing it to genkit().
 if (process.env.OPENAI_API_KEY) {
   plugins.push(
-    openai({
+    openAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   );
