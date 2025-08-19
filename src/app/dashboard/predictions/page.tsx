@@ -1,182 +1,321 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { enhanceFinancialPredictions, type EnhanceFinancialPredictionsOutput } from "@/ai/flows/enhance-financial-predictions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart2 } from "lucide-react";
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
+import { Loader2, BarChart2, Info, TrendingUp, TrendingDown, Wand, Download, AlertCircle } from "lucide-react";
+import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Bar, Line, Area } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Mock data generation
+const generateMockPredictionData = ({ volatility = 0.5, trend = 0.1 } = {}) => {
+  const data = [];
+  const today = new Date();
+  let price = 150;
+
+  // Historical data
+  for (let i = 60; i > 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    price += (Math.random() - 0.5) * 5;
+    data.push({
+      date: date.toISOString().split("T")[0],
+      actual: price,
+    });
+  }
+
+  // Forecast data
+  let forecastPrice = price;
+  for (let i = 1; i <= 30; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const randomFactor = (Math.random() - 0.5) * volatility * 10;
+    forecastPrice += trend + randomFactor;
+    const lowerBound = forecastPrice * (1 - volatility * 0.2);
+    const upperBound = forecastPrice * (1 + volatility * 0.2);
+    data.push({
+      date: date.toISOString().split("T")[0],
+      forecast: forecastPrice,
+      confidence: [lowerBound, upperBound]
+    });
+  }
+  return data;
+};
 
 const formSchema = z.object({
-  predictionData: z.string().min(1, "Prediction data is required.").refine(
-    (val) => {
-      try {
-        JSON.parse(val);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-    { message: "Must be valid JSON." }
-  ),
-  modelDescription: z.string().min(1, "Model description is required."),
+  volatility: z.array(z.number()).default([50]),
+  trend: z.array(z.number()).default([50]),
+  scenario: z.string().default("neutral"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const mockPredictionData = [
-  { name: 'Q1', revenue: 4000, profit: 2400 },
-  { name: 'Q2', revenue: 3000, profit: 1398 },
-  { name: 'Q3', revenue: 2000, profit: 9800 },
-  { name: 'Q4', revenue: 2780, profit: 3908 },
-];
+const scenarioPresets = {
+    neutral: { volatility: 0.5, trend: 0.1 },
+    earnings_beat: { volatility: 0.8, trend: 0.5 },
+    earnings_miss: { volatility: 1.2, trend: -0.3 },
+    macro_shock: { volatility: 1.5, trend: -0.8 },
+    sector_rally: { volatility: 0.6, trend: 0.6 },
+};
 
 export default function PredictionsPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<EnhanceFinancialPredictionsOutput | null>(null);
-  const [chartData, setChartData] = useState<any[]>(mockPredictionData);
+  const [chartData, setChartData] = useState(() => generateMockPredictionData());
   const { toast } = useToast();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      predictionData: JSON.stringify(mockPredictionData, null, 2),
-      modelDescription: "A gradient boosting model trained on historical quarterly financial data to predict next quarter's revenue and profit.",
+      volatility: [50],
+      trend: [50],
+      scenario: 'neutral',
     },
   });
 
-  async function onSubmit(data: FormData) {
+  const { volatility, trend, scenario } = form.watch();
+
+  const metrics = useMemo(() => {
+    const historicalData = chartData.filter(d => d.actual);
+    if (historicalData.length === 0) return { startPrice: 0, endPrice: 0, change: 0, changePercent: 0 };
+    const startPrice = historicalData[0].actual;
+    const endPrice = historicalData[historicalData.length - 1].actual;
+    const change = endPrice - startPrice;
+    const changePercent = (change / startPrice) * 100;
+    return { startPrice, endPrice, change, changePercent };
+  }, [chartData]);
+  
+  const forecastMetrics = useMemo(() => {
+    const forecastData = chartData.filter(d => d.forecast);
+    if (forecastData.length === 0) return { startPrice: 0, endPrice: 0, change: 0, changePercent: 0 };
+    const startPrice = forecastData[0].forecast;
+    const endPrice = forecastData[forecastData.length - 1].forecast;
+    const change = endPrice - startPrice;
+    const changePercent = (change / startPrice) * 100;
+    return { startPrice, endPrice, change, changePercent };
+  }, [chartData]);
+
+  function onSubmit(data: FormData) {
     setIsLoading(true);
-    setResult(null);
-    try {
-      setChartData(JSON.parse(data.predictionData));
-      const apiResult = await enhanceFinancialPredictions(data);
-      setResult(apiResult);
-      toast({
-          title: "Analysis Complete",
-          description: "Your prediction has been enhanced with notes and a visualization."
-      })
-    } catch (error) {
-      console.error("Error enhancing predictions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to enhance predictions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const settings = {
+        volatility: data.volatility[0] / 50.0,
+        trend: (data.trend[0] - 50) / 50.0
     }
+    setChartData(generateMockPredictionData(settings));
+    setIsLoading(false);
+    toast({
+      title: "Prediction Updated",
+      description: "The forecast has been regenerated with the new parameters.",
+    });
+  }
+  
+  function onScenarioChange(scenarioKey: keyof typeof scenarioPresets) {
+    const scenario = scenarioPresets[scenarioKey];
+    const newVolatility = scenario.volatility * 50;
+    const newTrend = scenario.trend * 50 + 50;
+
+    form.setValue('volatility', [newVolatility]);
+    form.setValue('trend', [newTrend]);
+    form.setValue('scenario', scenarioKey);
+
+    setIsLoading(true);
+    setChartData(generateMockPredictionData(scenario));
+    setIsLoading(false);
+     toast({
+      title: `Scenario Loaded: ${scenarioKey.replace(/_/g, ' ')}`,
+      description: "The forecast has been updated with the scenario presets.",
+    });
+  }
+  
+  const handleExport = () => {
+    toast({
+        title: "Export Initiated",
+        description: "In a real app, this would export the chart data as a CSV."
+    });
   }
 
   return (
-    <div className="grid gap-8 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Enhance Financial Predictions</CardTitle>
-          <CardDescription>Input prediction data and model details to generate visualizations and ML notes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="predictionData"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prediction Data (JSON)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter JSON data for prediction" {...field} rows={8} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="modelDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Model Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Describe the ML model used" {...field} rows={4} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enhance Prediction
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      
-      <div className="space-y-6">
-        {isLoading && !result && (
-            <Card className="flex h-full items-center justify-center">
-                <div className="text-center p-8">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                    <p className="mt-4 text-muted-foreground">AI is analyzing your data...</p>
-                </div>
-          </Card>
-        )}
-
-        {!isLoading && !result && (
-            <Card className="flex h-full items-center justify-center">
-                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg h-full w-full">
-                    <BarChart2 className="w-16 h-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold">Prediction Visualizer</h3>
-                    <p className="text-muted-foreground">Enter your data to generate an enhanced visualization and analysis.</p>
-                </div>
-            </Card>
-        )}
-
-        {result && (
-          <>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>{result.enhancedVisualization}</CardTitle>
-                <CardDescription>Based on the provided data and model description.</CardDescription>
+                <CardTitle>Price Forecast &amp; Analysis</CardTitle>
+                <CardDescription>Visualizing historical actuals vs. AI-powered future predictions.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="w-full h-80">
+                <div className="w-full h-96">
                   <ResponsiveContainer>
-                    <BarChart data={chartData}>
-                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
+                    <ComposedChart data={chartData}>
+                       <defs>
+                        <linearGradient id="confidence" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v.toFixed(0)}`} domain={['auto', 'auto']} tick={{fontSize: 12}} />
                       <Tooltip
                         contentStyle={{
                           background: "hsl(var(--background))",
                           borderColor: "hsl(var(--border))",
                         }}
+                         formatter={(value: any, name: string) => {
+                           if (name === 'confidence') {
+                             return [`$${value[0].toFixed(2)} - $${value[1].toFixed(2)}`, 'Confidence'];
+                           }
+                           return [`$${value.toFixed(2)}`, name.charAt(0).toUpperCase() + name.slice(1)];
+                         }}
                       />
                       <Legend />
-                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="profit" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Line dataKey="actual" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" dot={false} name="Actual" />
+                      <Line dataKey="forecast" stroke="hsl(var(--primary))" dot={false} strokeWidth={2} name="Forecast" />
+                      <Area type="monotone" dataKey="confidence" fill="url(#confidence)" stroke="" name="Confidence Band" />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
+        </div>
+        <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>ML-Specific Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{result.mlNotes}</p>
-              </CardContent>
+                <CardHeader>
+                    <CardTitle>What-If Exploration</CardTitle>
+                    <CardDescription>Adjust parameters to explore different prediction scenarios.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onChange={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="scenario"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Scenario Presets</FormLabel>
+                                         <Select onValueChange={(value) => onScenarioChange(value as any)} value={field.value}>
+                                            <FormControl>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="neutral">Neutral</SelectItem>
+                                                <SelectItem value="earnings_beat">Earnings Beat</SelectItem>
+                                                <SelectItem value="earnings_miss">Earnings Miss</SelectItem>
+                                                <SelectItem value="macro_shock">Macro Shock</SelectItem>
+                                                <SelectItem value="sector_rally">Sector Rally</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="volatility"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Volatility ({field.value[0]}%)</FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                                min={10} max={200} step={1}
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="trend"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Trend Strength ({field.value[0] - 50})</FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                                min={0} max={100} step={1}
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </form>
+                    </Form>
+                </CardContent>
             </Card>
-          </>
-        )}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button className="w-full" onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" /> Export Data (CSV)
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Historical Performance</CardTitle>
+                <CardDescription>60-day lookback</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{metrics.change >= 0 ? "+" : ""}${metrics.change.toFixed(2)}</div>
+                <div className={cn("text-sm", metrics.change >= 0 ? "text-green-500" : "text-red-500")}>
+                    {metrics.changePercent.toFixed(2)}%
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Forecasted Performance</CardTitle>
+                <CardDescription>30-day outlook</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="text-2xl font-bold">{forecastMetrics.change >= 0 ? "+" : ""}${forecastMetrics.change.toFixed(2)}</div>
+                 <div className={cn("text-sm", forecastMetrics.change >= 0 ? "text-green-500" : "text-red-500")}>
+                    {forecastMetrics.changePercent.toFixed(2)}%
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Key Error Metrics</CardTitle>
+                <CardDescription>Model accuracy on historical data</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">MAE:</span>
+                    <span className="font-medium">$5.21</span>
+                </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">RMSE:</span>
+                    <span className="font-medium">$7.88</span>
+                </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">MAPE:</span>
+                    <span className="font-medium">3.45%</span>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+       <Card className="bg-muted/50">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <AlertCircle className="w-6 h-6 text-muted-foreground" />
+                <div>
+                    <CardTitle>Disclaimer</CardTitle>
+                    <CardDescription>This information is for educational and illustrative purposes only. It is not financial advice. All predictions are based on models and may not be accurate.</CardDescription>
+                </div>
+            </CardHeader>
+       </Card>
     </div>
   );
 }

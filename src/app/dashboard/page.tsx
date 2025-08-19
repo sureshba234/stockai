@@ -1,9 +1,10 @@
+
 "use client"
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { ArrowRight, BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Star, ArrowUpRight, ArrowDownRight, MoreHorizontal, Loader2, Send } from 'lucide-react';
+import { ArrowRight, BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Star, ArrowUpRight, ArrowDownRight, MoreHorizontal, Loader2, Send, Wand } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { StockDataOutput } from '@/ai/schemas/stock-data';
@@ -14,11 +15,11 @@ import { Sheet, BarChart2 } from 'lucide-react';
 
 const features = [
   {
-    title: "ML Note Generation",
-    description: "Generate ML-specific notes for feature handling, explainability, and confidence for your models.",
-    href: "/dashboard/ml-notes",
-    icon: BotMessageSquare,
-    cta: "Generate Notes"
+    title: "Prediction Explorer",
+    description: "Run what-if scenarios and visualize AI-powered stock forecasts with confidence bands.",
+    href: "/dashboard/predictions",
+    icon: Wand,
+    cta: "Explore Predictions"
   },
   {
     title: "Market Analysis",
@@ -28,11 +29,11 @@ const features = [
     cta: "Analyze Sectors"
   },
   {
-    title: "Prediction Visualization",
-    description: "Enhance financial predictions with interactive visualizations and detailed ML notes.",
-    href: "/dashboard/predictions",
-    icon: BarChart2,
-    cta: "Enhance Predictions"
+    title: "ML Note Generation",
+    description: "Generate ML-specific notes for feature handling, explainability, and confidence for your models.",
+    href: "/dashboard/ml-notes",
+    icon: BotMessageSquare,
+    cta: "Generate Notes"
   },
 ];
 
