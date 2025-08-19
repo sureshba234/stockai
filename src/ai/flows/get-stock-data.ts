@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Fetches detailed stock data from an external API, with a fallback to mock data.
