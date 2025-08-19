@@ -23,7 +23,6 @@ export function DashboardHeader() {
     setIsClient(true);
   }, []);
 
-
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim() !== '') {
       router.push(`/dashboard/stocks?q=${searchQuery.trim()}`);
