@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,6 +78,7 @@ function StockPageContent() {
   const { toast } = useToast();
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
+  const [visibleDataCount, setVisibleDataCount] = useState(90);
 
   useEffect(() => {
     if (!api) {
@@ -137,6 +138,14 @@ function StockPageContent() {
     api?.scrollTo(index);
     setCurrent(index);
   };
+  
+  const handleZoom = (direction: 'in' | 'out') => {
+    if (direction === 'in') {
+      setVisibleDataCount(prev => Math.max(30, prev - 30));
+    } else {
+      setVisibleDataCount(prev => Math.min(90, prev + 30));
+    }
+  }
 
 
   if (isLoading) {
@@ -198,13 +207,23 @@ function StockPageContent() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Price Chart (90-day)</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex-1">
+                <CardTitle>Price Chart ({visibleDataCount}-day)</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={visibleDataCount <= 30}>
+                    <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={visibleDataCount >= 90}>
+                    <ZoomOut className="h-4 w-4" />
+                </Button>
+            </div>
         </CardHeader>
         <CardContent>
           <div className="w-full h-96">
             <ResponsiveContainer>
-              <ComposedChart data={stockData.chartData}>
+              <ComposedChart data={stockData.chartData.slice(-visibleDataCount)}>
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickMargin={5} />
                 <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['dataMin', 'dataMax']} tick={{fontSize: 12}} tickFormatter={(value) => `$${value.toFixed(2)}`} />
                 <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} />
