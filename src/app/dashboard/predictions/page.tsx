@@ -11,10 +11,20 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, BarChart2 } from "lucide-react";
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts';
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 
 const formSchema = z.object({
-  predictionData: z.string().min(1, "Prediction data is required."),
+  predictionData: z.string().min(1, "Prediction data is required.").refine(
+    (val) => {
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Must be valid JSON." }
+  ),
   modelDescription: z.string().min(1, "Model description is required."),
 });
 
@@ -30,6 +40,7 @@ const mockPredictionData = [
 export default function PredictionsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<EnhanceFinancialPredictionsOutput | null>(null);
+  const [chartData, setChartData] = useState<any[]>(mockPredictionData);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -44,8 +55,13 @@ export default function PredictionsPage() {
     setIsLoading(true);
     setResult(null);
     try {
+      setChartData(JSON.parse(data.predictionData));
       const apiResult = await enhanceFinancialPredictions(data);
       setResult(apiResult);
+      toast({
+          title: "Analysis Complete",
+          description: "Your prediction has been enhanced with notes and a visualization."
+      })
     } catch (error) {
       console.error("Error enhancing predictions:", error);
       toast({
@@ -104,22 +120,36 @@ export default function PredictionsPage() {
       </Card>
       
       <div className="space-y-6">
-        {isLoading && (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+        {isLoading && !result && (
+            <Card className="flex h-full items-center justify-center">
+                <div className="text-center p-8">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">AI is analyzing your data...</p>
+                </div>
+          </Card>
         )}
+
+        {!isLoading && !result && (
+            <Card className="flex h-full items-center justify-center">
+                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg h-full w-full">
+                    <BarChart2 className="w-16 h-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold">Prediction Visualizer</h3>
+                    <p className="text-muted-foreground">Enter your data to generate an enhanced visualization and analysis.</p>
+                </div>
+            </Card>
+        )}
+
         {result && (
           <>
             <Card>
               <CardHeader>
-                <CardTitle>Interactive Visualization</CardTitle>
-                <CardDescription>{result.enhancedVisualization}</CardDescription>
+                <CardTitle>{result.enhancedVisualization}</CardTitle>
+                <CardDescription>Based on the provided data and model description.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="w-full h-80">
                   <ResponsiveContainer>
-                    <BarChart data={mockPredictionData}>
+                    <BarChart data={chartData}>
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
@@ -128,6 +158,7 @@ export default function PredictionsPage() {
                           borderColor: "hsl(var(--border))",
                         }}
                       />
+                      <Legend />
                       <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="profit" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -140,7 +171,7 @@ export default function PredictionsPage() {
                 <CardTitle>ML-Specific Notes</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">{result.mlNotes}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{result.mlNotes}</p>
               </CardContent>
             </Card>
           </>

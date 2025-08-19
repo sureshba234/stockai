@@ -18,7 +18,7 @@ const EnhanceFinancialPredictionsInputSchema = z.object({
 export type EnhanceFinancialPredictionsInput = z.infer<typeof EnhanceFinancialPredictionsInputSchema>;
 
 const EnhanceFinancialPredictionsOutputSchema = z.object({
-  enhancedVisualization: z.string().describe('Interactive visualization of the financial prediction.'),
+  enhancedVisualization: z.string().describe('A title for the interactive visualization of the financial prediction. e.g. "Quarterly Revenue and Profit Forecast"'),
   mlNotes: z.string().describe('ML-specific notes on feature handling, explainability, and confidence.'),
 });
 export type EnhanceFinancialPredictionsOutput = z.infer<typeof EnhanceFinancialPredictionsOutputSchema>;
@@ -36,13 +36,13 @@ const prompt = ai.definePrompt({
   You will receive financial prediction data and a description of the ML model used to generate the predictions.
   Your task is to:
 
-  1.  Generate an interactive visualization of the financial prediction data. This visualization should be suitable for a web application.
+  1.  Generate a title for an interactive visualization of the financial prediction data. This visualization should be suitable for a web application.
   2.  Create ML-specific notes that cover feature handling, explainability, and confidence of the prediction.
 
   Use the following information:
   Prediction Data: {{{predictionData}}}
   Model Description: {{{modelDescription}}}
-  \n  Output the visualization and ML notes in a format suitable for display in a user interface.
+  \n  Output the visualization title and ML notes in a format suitable for display in a user interface.
   `,
 });
 
