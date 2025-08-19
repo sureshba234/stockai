@@ -12,7 +12,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getStockData } from './get-stock-data';
 import { getNewsAndSentiment } from './get-news-sentiment';
-import { openAI } from 'genkitx-openai';
 
 export const StockAgentInputSchema = z.object({
   query: z.string().describe('The user\'s question or prompt.'),
@@ -53,11 +52,11 @@ const stockAgentFlow = ai.defineFlow(
     outputSchema: StockAgentOutputSchema,
   },
   async input => {
-    // The global 'ai' object is now configured to use OpenAI if the API key is present.
-    // We can add model selection logic here if we need to override the default.
-    const {output} = await agentPrompt(input, {
-        model: process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash',
-    });
+    // Determine which model to use based on the environment variable.
+    // We pass the model as a string identifier, letting Genkit handle the routing.
+    const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
+    
+    const {output} = await agentPrompt(input, { model });
 
     return output!;
   }

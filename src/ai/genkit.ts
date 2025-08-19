@@ -17,5 +17,4 @@ if (process.env.OPENAI_API_KEY) {
 
 export const ai = genkit({
   plugins,
-  model: 'googleai/gemini-2.0-flash',
 });
