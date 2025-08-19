@@ -17,51 +17,11 @@ export function DashboardHeader() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [breadcrumbs, setBreadcrumbs] = useState<React.ReactNode[]>([]);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    const generateBreadcrumbs = () => {
-      const pathSegments = pathname.split('/').filter(Boolean);
-      let currentPath = '';
-      const breadcrumbItems = pathSegments.map((segment, index) => {
-        currentPath += `/${segment}`;
-        const navLink = navigationLinks.flat().find(link => link.href === currentPath);
-        
-        const isLast = index === pathSegments.length - 1;
-        let pageName = navLink?.label || segment.charAt(0).toUpperCase() + segment.slice(1);
-
-        // Special handling for dynamic pages like stocks
-        if (currentPath === '/dashboard/stocks' && searchParams.has('q')) {
-          pageName = searchParams.get('q')!.toUpperCase();
-        }
-
-        return (
-          <React.Fragment key={currentPath}>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              {isLast ? (
-                <BreadcrumbPage>{pageName}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={navLink?.href || currentPath}>{pageName}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-          </React.Fragment>
-        );
-      });
-      
-      setBreadcrumbs(breadcrumbItems);
-    }
-    generateBreadcrumbs();
-  }, [pathname, searchParams, isClient]);
 
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -69,20 +29,54 @@ export function DashboardHeader() {
       router.push(`/dashboard/stocks?q=${searchQuery.trim()}`);
     }
   };
+  
+  const generateBreadcrumbs = () => {
+    const pathSegments = pathname.split('/').filter(Boolean);
+    let currentPath = '';
+    return pathSegments.map((segment, index) => {
+      currentPath += `/${segment}`;
+      const navLink = navigationLinks.flat().find(link => link.href === currentPath);
+      
+      const isLast = index === pathSegments.length - 1;
+      let pageName = navLink?.label || segment.charAt(0).toUpperCase() + segment.slice(1);
+
+      // Special handling for dynamic pages like stocks
+      if (currentPath === '/dashboard/stocks' && searchParams.has('q')) {
+        pageName = searchParams.get('q')!.toUpperCase();
+      }
+
+      return (
+        <React.Fragment key={currentPath}>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            {isLast ? (
+              <BreadcrumbPage>{pageName}</BreadcrumbPage>
+            ) : (
+              <BreadcrumbLink asChild>
+                <Link href={navLink?.href || currentPath}>{pageName}</Link>
+              </BreadcrumbLink>
+            )}
+          </BreadcrumbItem>
+        </React.Fragment>
+      );
+    });
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <SidebarTrigger className="md:hidden" />
-       <Breadcrumb className="hidden md:flex">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          {isClient && breadcrumbs}
-        </BreadcrumbList>
-      </Breadcrumb>
+       {isClient && (
+        <Breadcrumb className="hidden md:flex">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            {generateBreadcrumbs()}
+          </BreadcrumbList>
+        </Breadcrumb>
+       )}
       <div className="relative ml-auto flex-1 md:grow-0">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
