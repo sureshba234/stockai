@@ -12,6 +12,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getStockData } from './get-stock-data';
 import { getNewsAndSentiment } from './get-news-sentiment';
+import { openAI } from 'genkitx-openai';
 
 export const StockAgentInputSchema = z.object({
   query: z.string().describe('The user\'s question or prompt.'),
@@ -53,11 +54,9 @@ const stockAgentFlow = ai.defineFlow(
   },
   async input => {
     // Prefer OpenAI if available, otherwise fall back to Google AI.
-    const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
+    const model = process.env.OPENAI_API_KEY ? openAI('gpt-4o') : 'googleai/gemini-2.0-flash';
     
-    const {output} = await agentPrompt({
-        ...input
-    }, { model }); // Pass model in the second argument (options)
+    const {output} = await agentPrompt(input, { model });
 
     return output!;
   }
