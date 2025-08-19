@@ -9,7 +9,7 @@ import { navigationLinks } from "@/components/dashboard/sidebar-nav";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Link from "next/link";
 import { Search, LineChart } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import React from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { stockData } from "@/lib/stocks";
@@ -54,7 +54,7 @@ function StockSearch() {
 
   return (
     <div className="relative" ref={searchRef}>
-       <Command shouldFilter={false} className="overflow-visible bg-transparent">
+      <Command shouldFilter={false} className="overflow-visible bg-transparent">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <CommandInput
@@ -66,31 +66,31 @@ function StockSearch() {
           />
         </div>
         {isMounted && isOpen && (
-           <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
+          <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
             <CommandList>
-                {filteredStocks.length > 0 ? (
-                  <CommandGroup heading="Suggestions">
-                    {filteredStocks.map((stock) => (
-                      <CommandItem
-                        key={stock.ticker}
-                        value={stock.ticker}
-                        onSelect={() => handleSelect(stock.ticker)}
-                        className="cursor-pointer"
-                      >
-                        <LineChart className="mr-2 h-4 w-4" />
-                        <span>{stock.name} ({stock.ticker})</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ) : (
-                  debouncedQuery.length > 0 && <CommandEmpty>No results found.</CommandEmpty>
-                )}
+              {filteredStocks.length > 0 ? (
+                <CommandGroup heading="Suggestions">
+                  {filteredStocks.map((stock) => (
+                    <CommandItem
+                      key={stock.ticker}
+                      value={stock.ticker}
+                      onSelect={() => handleSelect(stock.ticker)}
+                      className="cursor-pointer"
+                    >
+                      <LineChart className="mr-2 h-4 w-4" />
+                      <span>{stock.name} ({stock.ticker})</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ) : (
+                debouncedQuery.length > 0 && <CommandEmpty>No results found.</CommandEmpty>
+              )}
             </CommandList>
-           </div>
+          </div>
         )}
-       </Command>
+      </Command>
     </div>
-  )
+  );
 }
 
 
