@@ -1,11 +1,7 @@
 {
   "name": "Insight Canvas",
   "short_name": "Insight",
-  "description": "Your intelligent financial analysis and MLOps platform.",
-  "start_url": "/dashboard",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#008080",
+  "description": "Financial platforms with Lovable hosting.",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -17,5 +13,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#008080",
+  "background_color": "#F0F8FF",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait"
 }
