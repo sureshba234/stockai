@@ -46,7 +46,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardTitle>{feature.title}</CardTitle>
                     <CardDescription className="mt-1">{feature.description}</CardDescription>
                   </div>
                   <div className="p-2 rounded-lg bg-primary/10">
