@@ -50,18 +50,22 @@ const getStockDataFlow = ai.defineFlow(
   },
   async ({ ticker }) => {
     const providers = [
-        { name: "Polygon.io", fetcher: fetchFromPolygon },
-        { name: "Financial Modeling Prep", fetcher: fetchFromFMP },
-        { name: "Finnhub", fetcher: fetchFromFinnhub },
-        { name: "Twelve Data", fetcher: fetchFromTwelveData },
-        { name: "Alpha Vantage", fetcher: fetchFromAlphaVantage },
-        { name: "Marketstack", fetcher: fetchFromMarketstack },
+        { name: "Polygon.io", fetcher: fetchFromPolygon, apiKey: process.env.POLYGON_API_KEY },
+        { name: "Financial Modeling Prep", fetcher: fetchFromFMP, apiKey: process.env.FINANCIAL_MODELING_PREP_API_KEY },
+        { name: "Finnhub", fetcher: fetchFromFinnhub, apiKey: process.env.FINNHUB_API_KEY },
+        { name: "Twelve Data", fetcher: fetchFromTwelveData, apiKey: process.env.TWELVE_DATA_API_KEY },
+        { name: "Alpha Vantage", fetcher: fetchFromAlphaVantage, apiKey: process.env.ALPHA_VANTAGE_API_KEY },
+        { name: "Marketstack", fetcher: fetchFromMarketstack, apiKey: process.env.MARKETSTACK_API_KEY },
     ];
 
     for (const provider of providers) {
+        if (!provider.apiKey) {
+            console.log(`API key for ${provider.name} not found. Skipping.`);
+            continue;
+        }
         try {
             console.log(`Attempting to fetch data for ${ticker} from ${provider.name}...`);
-            const data = await provider.fetcher(ticker);
+            const data = await provider.fetcher(ticker, provider.apiKey);
             if (data) {
                 console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
                 
@@ -83,10 +87,7 @@ const getStockDataFlow = ai.defineFlow(
 
 // #region API Fetchers
 
-async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.POLYGON_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error("Polygon.io API key not configured.");
-
+async function fetchFromPolygon(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`https://api.polygon.io${path}`);
         url.search = new URLSearchParams({ ...params, apiKey }).toString();
@@ -148,10 +149,7 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
 }
 
 
-async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.FINANCIAL_MODELING_PREP_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error("Financial Modeling Prep API key not configured.");
-
+async function fetchFromFMP(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`https://financialmodelingprep.com/api${path}`);
         url.search = new URLSearchParams({ ...params, apikey: apiKey }).toString();
@@ -213,10 +211,7 @@ async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'data
 }
 
 
-async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.FINNHUB_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error("Finnhub API key not configured.");
-    
+async function fetchFromFinnhub(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const BASE_URL = 'https://finnhub.io/api/v1';
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`${BASE_URL}${path}`);
@@ -275,10 +270,7 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
 }
 
 
-async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.TWELVE_DATA_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error("Twelve Data API key not configured.");
-    
+async function fetchFromTwelveData(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`https://api.twelvedata.com${path}`);
         url.search = new URLSearchParams({ ...params, apikey: apiKey }).toString();
@@ -331,10 +323,7 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
 }
 
 
-async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error(`Alpha Vantage API key not configured.`);
-
+async function fetchFromAlphaVantage(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const get = async (params: Record<string, string> = {}) => {
         const url = new URL('https://www.alphavantage.co/query');
         url.search = new URLSearchParams({...params, apikey: apiKey}).toString();
@@ -387,10 +376,7 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
     };
 }
 
-async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
-    const apiKey = process.env.MARKETSTACK_API_KEY;
-    if (!apiKey || !apiKey.trim()) throw new Error("Marketstack API key not configured.");
-    
+async function fetchFromMarketstack(ticker: string, apiKey: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`https://api.marketstack.com/v1${path}`);
         url.search = new URLSearchParams({ ...params, access_key: apiKey }).toString();
@@ -416,7 +402,7 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
     
     const price = latest.close.toFixed(2);
     const change = (latest.close - previous.close).toFixed(2);
-    const changePercent = previous.close !== 0 ? ((change / previous.close) * 100).toFixed(2) : '0.00';
+    const changePercent = previous.close !== 0 ? ((parseFloat(change) / previous.close) * 100).toFixed(2) : '0.00';
     const isUp = parseFloat(change) >= 0;
     
     const chartData = dailyData.map((d: any) => ({
@@ -478,6 +464,3 @@ function formatNewsDate(alphaVantageDate: string): string {
     return `${year}-${month}-${day}`;
 }
 // #endregion
-
-
-    
