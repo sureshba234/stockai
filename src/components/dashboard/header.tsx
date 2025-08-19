@@ -21,17 +21,10 @@ function StockSearch() {
   const debouncedQuery = useDebounce(query, 200);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const handleSelect = useCallback((ticker: string) => {
+  const runCommand = useCallback((command: () => unknown) => {
     setIsOpen(false);
-    setQuery("");
-    router.push(`/dashboard/stocks?q=${ticker}`);
-  }, [router]);
-  
-  const runCommand = React.useCallback((command: () => unknown) => {
-    setIsOpen(false)
-    command()
-  }, [])
-
+    command();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,7 +74,7 @@ function StockSearch() {
                   ))}
                 </CommandGroup>
               )}
-              {isOpen && query.length > 0 && filteredStocks.length === 0 && (
+              {isOpen && debouncedQuery.length > 0 && filteredStocks.length === 0 && (
                  <CommandEmpty>No results found.</CommandEmpty>
               )}
             </CommandList>
