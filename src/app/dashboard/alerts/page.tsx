@@ -224,46 +224,32 @@ export default function AlertsPage() {
                     <FormField
                         control={form.control}
                         name="channels"
-                        render={() => (
+                        render={({ field }) => (
                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {deliveryChannels.map((channel) => {
                                 const Icon = channel.icon;
+                                const isSelected = field.value?.includes(channel.id);
                                 return (
-                                <FormField
+                                <div
                                     key={channel.id}
-                                    control={form.control}
-                                    name="channels"
-                                    render={({ field }) => {
-                                    return (
-                                        <FormItem 
-                                            key={channel.id}
-                                            className={cn(
-                                                "flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 cursor-pointer transition-colors",
-                                                field.value?.includes(channel.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                                            )}
-                                            onClick={() => {
-                                                const a = form.getValues("channels");
-                                                const valueSet = new Set(a);
-                                                if (valueSet.has(channel.id)) {
-                                                    valueSet.delete(channel.id);
-                                                } else {
-                                                    valueSet.add(channel.id);
-                                                }
-                                                form.setValue("channels", Array.from(valueSet));
-                                            }}
-                                        >
-                                        <FormControl>
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5 text-muted-foreground" />
-                                                <FormLabel className="font-normal cursor-pointer">
-                                                    {channel.label}
-                                                </FormLabel>
-                                            </div>
-                                        </FormControl>
-                                        </FormItem>
-                                    )
+                                    className={cn(
+                                        "flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 cursor-pointer transition-colors",
+                                        isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                                    )}
+                                    onClick={() => {
+                                        const newValue = isSelected
+                                            ? field.value.filter(v => v !== channel.id)
+                                            : [...field.value, channel.id];
+                                        field.onChange(newValue);
                                     }}
-                                />
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Icon className="h-5 w-5 text-muted-foreground" />
+                                        <FormLabel className="font-normal cursor-pointer">
+                                            {channel.label}
+                                        </FormLabel>
+                                    </div>
+                                </div>
                                 )
                             })}
                             </div>

@@ -142,8 +142,8 @@ const screeners = [
 
 
 export default function ScreenerPage() {
-  const [activeScreen, setActiveScreen] = useState<string | null>(null);
-  const [sectorFilter, setSectorFilter] = useState('All');
+  const [activeScreen, setActiveScreen] = useState<string | null>(screeners[0].title);
+  const [sectorFilter, setSectorFilter] = useState('Technology');
 
   const sectors = useMemo(() => {
     const allSectors = new Set(stockData.map(stock => stock.sector).filter(Boolean));

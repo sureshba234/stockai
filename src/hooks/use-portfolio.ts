@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useCallback } from 'react';
@@ -58,13 +59,13 @@ export function usePortfolio() {
   const addTransaction = (transaction: Transaction) => {
     const newTransactions = [...transactions, transaction];
     saveTransactions(newTransactions);
-    processTransactions(newTransactions);
+    // No need to call processTransactions here, useEffect will handle it
   };
 
   const removeTransaction = (transactionId: string) => {
     const newTransactions = transactions.filter(tx => tx.id !== transactionId);
     saveTransactions(newTransactions);
-    processTransactions(newTransactions);
+    // No need to call processTransactions here, useEffect will handle it
   };
   
   const processTransactions = useCallback(async (txs: Transaction[]) => {
@@ -72,17 +73,26 @@ export function usePortfolio() {
       
       const holdingsCalc: Record<string, { shares: number, totalCost: number, ticker: string }> = {};
 
-      for (const tx of txs) {
+      // Sort transactions by date to process them in order
+      const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      for (const tx of sortedTxs) {
           if (!holdingsCalc[tx.ticker]) {
               holdingsCalc[tx.ticker] = { shares: 0, totalCost: 0, ticker: tx.ticker };
           }
+          const currentHolding = holdingsCalc[tx.ticker];
+          
           if (tx.type === 'buy') {
-              holdingsCalc[tx.ticker].shares += tx.shares;
-              holdingsCalc[tx.ticker].totalCost += tx.shares * tx.price;
+              currentHolding.shares += tx.shares;
+              currentHolding.totalCost += tx.shares * tx.price;
           } else {
-              const avgCost = holdingsCalc[tx.ticker].shares > 0 ? holdingsCalc[tx.ticker].totalCost / holdingsCalc[tx.ticker].shares : 0;
-              holdingsCalc[tx.ticker].shares -= tx.shares;
-              holdingsCalc[tx.ticker].totalCost -= tx.shares * avgCost; // Reduce cost basis
+              const avgCost = currentHolding.shares > 0 ? currentHolding.totalCost / currentHolding.shares : 0;
+              currentHolding.shares -= tx.shares;
+              currentHolding.totalCost -= tx.shares * avgCost; // Reduce cost basis proportionally
+              if (currentHolding.shares < 1e-9) { // Handle floating point inaccuracies
+                  currentHolding.shares = 0;
+                  currentHolding.totalCost = 0;
+              }
           }
       }
       
@@ -138,15 +148,15 @@ export function usePortfolio() {
   useEffect(() => {
     const txs = loadTransactions();
     setTransactions(txs);
-    processTransactions(txs);
-  }, [loadTransactions, processTransactions]);
+  }, [loadTransactions]);
+  
+  useEffect(() => {
+      processTransactions(transactions);
+  }, [transactions, processTransactions])
   
   const refreshPortfolio = useCallback(() => {
-    const txs = loadTransactions();
-    setTransactions(txs);
-    processTransactions(txs);
-  }, [loadTransactions, processTransactions]);
+    processTransactions(transactions);
+  }, [transactions, processTransactions]);
 
   return { transactions, holdings, summary, isLoading, addTransaction, removeTransaction, refreshPortfolio };
 }
-    

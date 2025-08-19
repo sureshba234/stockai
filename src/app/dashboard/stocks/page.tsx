@@ -172,7 +172,7 @@ function StockPageContent() {
 
 
   const chartData = useMemo(() => {
-    if (!stockData) return [];
+    if (!stockData?.chartData) return [];
     
     const rangeInfo = timeRanges.find(r => r.label === selectedTimeRange);
     const daysToShow = rangeInfo ? rangeInfo.days : Infinity;
@@ -189,7 +189,7 @@ function StockPageContent() {
       ma50: ma50[index],
       ma200: ma200[index],
     }));
-  }, [stockData, selectedTimeRange]);
+  }, [stockData?.chartData, selectedTimeRange]);
 
 
   useEffect(() => {
