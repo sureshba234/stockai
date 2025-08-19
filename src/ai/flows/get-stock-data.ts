@@ -285,19 +285,19 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
     
     const get = async (path: string, params: Record<string, string> = {}) => {
         const url = new URL(`https://api.twelvedata.com${path}`);
-        url.search = new URLSearchParams({ symbol: ticker, ...params, apikey: apiKey }).toString();
+        url.search = new URLSearchParams({ ...params, apikey: apiKey }).toString();
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error(`Twelve Data API request for ${path} failed with status ${res.status}`);
         const data = await res.json();
-        if (data.code > 200) throw new Error(`Twelve Data API error: ${data.message}`);
+        if (data.code > 200 && data.status !== 'ok') throw new Error(`Twelve Data API error: ${data.message}`);
         return data;
     }
     
     const [profile, quote, news, timeSeries] = await Promise.all([
-        get('/profile'),
-        get('/quote'),
-        get('/news', { limit: '5'}),
-        get('/time_series', { interval: '1day', outputsize: '90' }),
+        get('/profile', { symbol: ticker }),
+        get('/quote', { symbol: ticker }),
+        get('/news', { symbol: ticker, limit: '5'}),
+        get('/time_series', { symbol: ticker, interval: '1day', outputsize: '90' }),
     ]);
 
     if (!profile.name || !quote.change) throw new Error("Could not retrieve profile or quote from Twelve Data.");
@@ -413,7 +413,7 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
     
     const [eodData, tickerData, newsData] = await Promise.all([
         get('/eod', { symbols: ticker, limit: '90' }),
-        get('/tickers', { symbols: ticker }),
+        get('/tickers', { ticker_symbols: ticker }),
         get('/news', { tickers: ticker, limit: '5' })
     ]);
     
