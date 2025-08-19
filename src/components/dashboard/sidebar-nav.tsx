@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -9,7 +10,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper, Star, Filter } from "lucide-react";
+import { BotMessageSquare, BarChart, BellRing, Link as LinkIcon, Wallet, Users, LayoutDashboard, Settings, Sheet, FileText, LineChart, Home, Newspaper, Star, Filter, History } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavLink = {
@@ -39,6 +40,7 @@ const genAILinks: NavLink[] = [
   { href: "/dashboard/ml-notes", label: "ML Notes", icon: BotMessageSquare },
   { href: "/dashboard/predictions", label: "Predictions", icon: BarChart },
   { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
+  { href: "/dashboard/alerts/history", label: "Alert History", icon: History },
   { href: "/dashboard/relations", label: "Asset Relations", icon: LinkIcon },
   { href: "/dashboard/analytics", label: "Analytics", icon: Sheet },
 ];
