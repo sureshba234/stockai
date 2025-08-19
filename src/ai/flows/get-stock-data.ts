@@ -401,7 +401,7 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
     if (!apiKey || !apiKey.trim()) throw new Error("Marketstack API key not configured.");
     
     const get = async (path: string, params: Record<string, string> = {}) => {
-        const url = new URL(`http://api.marketstack.com/v1${path}`);
+        const url = new URL(`https://api.marketstack.com/v1${path}`);
         url.search = new URLSearchParams({ ...params, access_key: apiKey }).toString();
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error(`Marketstack API request failed: ${res.status}`);
