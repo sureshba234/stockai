@@ -12,79 +12,88 @@ export async function getStockData(input: StockDataInput): Promise<StockDataOutp
   return getStockDataFlow(input);
 }
 
-// Placeholder implementation for fetching stock data.
 // In a real application, this would call an external financial data API.
 const getStockDataTool = ai.defineTool(
     {
         name: 'getStockDataTool',
-        description: 'Retrieves detailed data for a given stock ticker.',
+        description: 'Retrieves detailed data for a given stock ticker from Alpha Vantage.',
         inputSchema: StockDataInputSchema,
         outputSchema: StockDataOutputSchema,
     },
     async ({ ticker }) => {
-        console.log(`Fetching mock data for ticker: ${ticker}`);
+        const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+        if (!apiKey || apiKey === 'YOUR_API_KEY') {
+            throw new Error('Alpha Vantage API key is not configured. Please add it to your .env file.');
+        }
 
-        // Mock data structure - this would be replaced by a real API call
-        const allStockData: { [key: string]: StockDataOutput } = {
-            "AAPL": {
-                name: "Apple Inc.",
-                ticker: "AAPL",
-                price: "214.29",
-                change: "+4.59",
-                changePercent: "+2.19%",
-                isUp: true,
-                chartData: [
-                  { date: '2024-07-01', price: 200 },
-                  { date: '2024-07-02', price: 205 },
-                  { date: '2024-07-03', price: 203 },
-                  { date: '2024-07-04', price: 208 },
-                  { date: '2024-07-05', price: 210 },
-                  { date: '2024-07-08', price: 214 },
-                  { date: '2024-07-09', price: 212 },
-                  { date: '2024-07-10', price: 214.29 },
-                ],
-                fundamentalsData: [
-                  { label: "Market Cap", value: "3.28T" },
-                  { label: "P/E Ratio (TTM)", value: "33.19" },
-                  { label: "EPS (TTM)", value: "6.46" },
-                  { label: "Revenue (TTM)", value: "381.62B" },
-                ],
-                news: [
-                    { title: "Apple's Vision Pro Sales Are Slowing Down", source: "Bloomberg", url: "#", publishedAt: "2024-07-10" }
-                ],
-                predictions: "The model predicts a slight upward trend for the next quarter, driven by strong iPhone sales."
-              },
-              "MSFT": {
-                name: "Microsoft Corporation",
-                ticker: "MSFT",
-                price: "450.00",
-                change: "-1.50",
-                changePercent: "-0.33%",
-                isUp: false,
-                chartData: [
-                    { date: '2024-07-01', price: 440 },
-                    { date: '2024-07-02', price: 445 },
-                    { date: '2024-07-03', price: 442 },
-                    { date: '2024-07-04', price: 448 },
-                    { date: '2024-07-05', price: 452 },
-                    { date: '2024-07-08', price: 455 },
-                    { date: '2024-07-09', price: 451 },
-                    { date: '2024-07-10', price: 450.00 },
-                ],
-                fundamentalsData: [
-                  { label: "Market Cap", value: "3.34T" },
-                  { label: "P/E Ratio (TTM)", value: "38.7" },
-                  { label: "EPS (TTM)", value: "11.62" },
-                  { label: "Revenue (TTM)", value: "236.58B" },
-                ]
-              },
-        };
+        const BASE_URL = 'https://www.alphavantage.co/query';
 
-        const stock = allStockData[ticker.toUpperCase()] || allStockData["AAPL"];
-        return stock;
+        try {
+            // Fetch company overview for fundamentals and name
+            const overviewResponse = await fetch(`${BASE_URL}?function=OVERVIEW&symbol=${ticker}&apikey=${apiKey}`);
+            const overviewData = await overviewResponse.json();
+            if (overviewData.Note || !overviewData.Symbol) {
+                 console.error("Failed to fetch overview data or API limit reached:", overviewData);
+                 throw new Error(`Could not retrieve data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
+            }
+
+            // Fetch global quote for price, change
+            const quoteResponse = await fetch(`${BASE_URL}?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`);
+            const quoteData = (await quoteResponse.json())['Global Quote'];
+            
+            // Fetch daily time series for the chart
+            const chartResponse = await fetch(`${BASE_URL}?function=TIME_SERIES_DAILY&symbol=${ticker}&apikey=${apiKey}`);
+            const chartDataRaw = (await chartResponse.json())['Time Series (Daily)'];
+
+            // Fetch news
+            const newsResponse = await fetch(`${BASE_URL}?function=NEWS_SENTIMENT&tickers=${ticker}&limit=5&apikey=${apiKey}`);
+            const newsData = (await newsResponse.json()).feed || [];
+
+            // Process and format the data to match our schema
+            const chartData = chartDataRaw 
+                ? Object.entries(chartDataRaw).slice(0, 90).map(([date, data]) => ({
+                    date,
+                    price: parseFloat((data as any)['4. close']),
+                })).reverse()
+                : [];
+            
+            const fundamentalsData = [
+                { label: "Market Cap", value: formatNumber(parseFloat(overviewData.MarketCapitalization)) },
+                { label: "P/E Ratio", value: overviewData.PERatio },
+                { label: "EPS", value: overviewData.EPS },
+                { label: "Revenue (TTM)", value: formatNumber(parseFloat(overviewData.RevenueTTM)) },
+            ];
+
+            const news = newsData.map((item: any) => ({
+                title: item.title,
+                source: item.source,
+                url: item.url,
+                publishedAt: formatNewsDate(item.time_published),
+            }));
+
+            const price = parseFloat(quoteData['05. price']).toFixed(2);
+            const change = parseFloat(quoteData['09. change']).toFixed(2);
+            const changePercent = parseFloat(quoteData['10. change_percent'].replace('%','')).toFixed(2);
+
+            return {
+                name: overviewData.Name,
+                ticker: overviewData.Symbol,
+                price: price,
+                change: change,
+                changePercent: `${changePercent}%`,
+                isUp: parseFloat(change) >= 0,
+                chartData,
+                fundamentalsData,
+                news,
+                predictions: "AI-powered predictions are in development. Check back soon for insights."
+            };
+
+        } catch (error) {
+            console.error(`API call failed for ${ticker}:`, error);
+            throw new Error(`Failed to fetch complete data for ${ticker}. The API may be temporarily unavailable or the symbol is invalid.`);
+        }
     }
 );
-
 
 const getStockDataFlow = ai.defineFlow(
   {
@@ -96,3 +105,26 @@ const getStockDataFlow = ai.defineFlow(
     return await getStockDataTool(input);
   }
 );
+
+
+// Helper functions for formatting
+function formatNumber(num: number): string {
+    if (num >= 1_000_000_000_000) {
+        return (num / 1_000_000_000_000).toFixed(2) + 'T';
+    }
+    if (num >= 1_000_000_000) {
+        return (num / 1_000_000_000).toFixed(2) + 'B';
+    }
+    if (num >= 1_000_000) {
+        return (num / 1_000_000).toFixed(2) + 'M';
+    }
+    return num.toString();
+}
+
+function formatNewsDate(alphaVantageDate: string): string {
+    // Format: YYYYMMDDTHHMMSS
+    const year = alphaVantageDate.substring(0, 4);
+    const month = alphaVantageDate.substring(4, 6);
+    const day = alphaVantageDate.substring(6, 8);
+    return `${year}-${month}-${day}`;
+}
