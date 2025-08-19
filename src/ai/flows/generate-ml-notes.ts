@@ -48,7 +48,7 @@ const fetchFeatureImportance = ai.defineTool(
     // Generate more realistic, but still mock, importance scores.
     const sortedFeatures = [...input.features].sort();
     let remainingImportance = 1.0;
-    sortedFeatures.forEach((feature, index) => {
+    sortedFeatures.forEach((feature) => {
         // Assign decreasing importance for demonstration purposes.
         const score = remainingImportance * (Math.random() * 0.4 + 0.3); // take 30-70% of what's left
         importanceScores[feature.trim()] = parseFloat(score.toFixed(4));
@@ -56,7 +56,7 @@ const fetchFeatureImportance = ai.defineTool(
     });
     // Distribute any tiny remaining importance to the last feature
     if (sortedFeatures.length > 0) {
-        importanceScores[sortedFeatures[sortedFeatures.length - 1].trim()] += remainingImportance;
+        importanceScores[sortedFeatures[sortedFeatures.length - 1].trim()] = (importanceScores[sortedFeatures[sortedFeatures.length - 1].trim()] || 0) + remainingImportance;
     }
     return importanceScores;
   }
@@ -84,7 +84,7 @@ const generateMLNotesFlow = ai.defineFlow(
     outputSchema: MLNotesOutputSchema,
   },
   async (input) => {
-    const { output, history } = await prompt({
+    const { output } = await prompt({
         ...input,
         // Also pass the list of features to the tool.
         features: input.featureList.split(',').map(f => f.trim()),
