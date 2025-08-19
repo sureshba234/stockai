@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from "react";
 import React from 'react';
 import { stockData } from "@/lib/stocks";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export function DashboardHeader() {
   const [isClient, setIsClient] = useState(false);
@@ -32,10 +33,26 @@ export function DashboardHeader() {
   );
 }
 
+function fuzzySearch(query: string, text: string): boolean {
+    let textIndex = 0;
+    let queryIndex = 0;
+    const qLower = query.toLowerCase();
+    const tLower = text.toLowerCase();
+
+    while (queryIndex < qLower.length && textIndex < tLower.length) {
+        if (qLower[queryIndex] === tLower[textIndex]) {
+            queryIndex++;
+        }
+        textIndex++;
+    }
+
+    return queryIndex === qLower.length;
+}
+
 
 function StockSearch() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<{ name: string; ticker: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{ name: string; ticker: string; sector: string }[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
@@ -45,8 +62,8 @@ function StockSearch() {
       const filteredStocks = stockData
         .filter(
           (stock) =>
-            stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            stock.ticker.toLowerCase().includes(searchQuery.toLowerCase())
+            fuzzySearch(searchQuery, stock.name) ||
+            fuzzySearch(searchQuery, stock.ticker)
         )
         .slice(0, 10); // Limit to 10 suggestions
       setSuggestions(filteredStocks);
@@ -102,7 +119,10 @@ function StockSearch() {
                 className="cursor-pointer p-2 hover:bg-accent"
                 onClick={() => handleSelectStock(stock.ticker)}
               >
-                <div className="font-bold">{stock.ticker}</div>
+                <div className="flex justify-between items-center">
+                    <span className="font-bold">{stock.ticker}</span>
+                    <Badge variant="outline">{stock.sector}</Badge>
+                </div>
                 <div className="text-sm text-muted-foreground">{stock.name}</div>
               </li>
             ))}
