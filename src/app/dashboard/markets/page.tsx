@@ -24,9 +24,12 @@ export default function MarketsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTopGainers(generateMockMarketMovers(5, 'gainers'));
-    setTopLosers(generateMockMarketMovers(5, 'losers'));
-    setIsLoading(false);
+    // Simulate API call
+    setTimeout(() => {
+      setTopGainers(generateMockMarketMovers(5, 'gainers'));
+      setTopLosers(generateMockMarketMovers(5, 'losers'));
+      setIsLoading(false);
+    }, 500);
   }, []);
 
   const renderTable = (title: string, description: string, data: Mover[], isGainer: boolean) => (
