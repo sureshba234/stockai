@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon, Info } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon, Info, Check } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { stockData as stockList } from "@/lib/stocks";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 
 function StockPageSkeleton() {
@@ -75,6 +77,26 @@ function StockPageSkeleton() {
   );
 }
 
+const timeRanges = [
+    { label: "1M", days: 30 },
+    { label: "6M", days: 180 },
+    { label: "1Yr", days: 365 },
+    { label: "3Yr", days: 365 * 3 },
+    { label: "5Yr", days: 365 * 5 },
+    { label: "Max", days: Infinity },
+];
+
+function calculateMovingAverage(data: {price: number}[], period: number) {
+    if (!data || data.length < period) return [];
+    const result = [];
+    for (let i = period - 1; i < data.length; i++) {
+        const sum = data.slice(i - period + 1, i + 1).reduce((acc, val) => acc + val.price, 0);
+        result.push(sum / period);
+    }
+    // Pad the beginning with nulls so the array length matches
+    return Array(period - 1).fill(null).concat(result);
+}
+
 function StockPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -84,14 +106,21 @@ function StockPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [comparisonStockData, setComparisonStockData] = useState<StockDataOutput | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [isCompareDialogOpen, setCompareDialogOpen] = useState(false);
 
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
-  const [visibleDataCount, setVisibleDataCount] = useState(90);
+  
+  const [selectedTimeRange, setSelectedTimeRange] = useState("1Yr");
+  const [chartOverlays, setChartOverlays] = useState({
+      price: true,
+      ma50: false,
+      ma200: false,
+      volume: true
+  })
+
   const [isWatched, setIsWatched] = useState(false);
 
   useEffect(() => {
@@ -116,7 +145,7 @@ function StockPageContent() {
 
   const handleSetAlert = () => {
     if (!stockData) return;
-    router.push(`/dashboard/alerts?mlSignal=${stockData.ticker} Price Cross`);
+    router.push(`/dashboard/alerts?ticker=${stockData.ticker}`);
   };
 
   const handleExportData = () => {
@@ -137,82 +166,27 @@ function StockPageContent() {
   const handleCompareSelect = async (ticker: string) => {
     setCompareDialogOpen(false);
     if (!stockData || stockData.ticker === ticker) return;
-    
-    setIsComparing(true);
-    setCompareError(null);
-    setComparisonStockData(null);
-    try {
-        const data = await getStockData({ ticker });
-        if (data) {
-            setComparisonStockData(data);
-            toast({
-                title: "Comparison Added",
-                description: `Now comparing ${stockData.ticker} with ${data.ticker}.`
-            });
-        } else {
-            setCompareError(`Could not fetch data for ${ticker}.`);
-            toast({
-                title: "Comparison Failed",
-                description: `Could not fetch data for ${ticker}.`,
-                variant: "destructive"
-            });
-        }
-    } catch (e: any) {
-        setCompareError(e.message);
-        toast({
-            title: "Comparison Error",
-            description: e.message,
-            variant: "destructive"
-        });
-    } finally {
-        setIsComparing(false);
-    }
+    toast({ title: "Comparison feature not implemented", description: "This feature is coming soon!" });
   }
 
-  const clearComparison = () => {
-      setComparisonStockData(null);
-      setCompareError(null);
-  }
 
   const chartData = useMemo(() => {
     if (!stockData) return [];
-
-    const mainSlicedData = stockData.chartData.slice(-visibleDataCount);
-    if (mainSlicedData.length === 0) return [];
     
-    if (comparisonStockData) {
-        const basePriceMain = mainSlicedData[0].price;
-        let basePriceCompare: number | null = null;
-        let compareSlicedData: StockDataOutput['chartData'] = [];
-        
-        compareSlicedData = comparisonStockData.chartData.slice(-visibleDataCount);
-        if (compareSlicedData.length > 0) {
-            basePriceCompare = compareSlicedData[0].price;
-        }
+    const rangeInfo = timeRanges.find(r => r.label === selectedTimeRange);
+    const daysToShow = rangeInfo ? rangeInfo.days : 365;
 
-        return mainSlicedData.map((mainPoint, index) => {
-            const point: any = {
-                date: mainPoint.date,
-                volume: mainPoint.volume,
-                [`${stockData.ticker}_price`]: mainPoint.price,
-                [`${stockData.ticker}_perf`]: (mainPoint.price / basePriceMain - 1) * 100,
-            };
+    const slicedData = stockData.chartData.slice(-daysToShow);
+    const ma50 = calculateMovingAverage(slicedData, 50);
+    const ma200 = calculateMovingAverage(slicedData, 200);
 
-            if (comparisonStockData && compareSlicedData[index] && basePriceCompare) {
-                point[`${comparisonStockData.ticker}_price`] = compareSlicedData[index].price;
-                point[`${comparisonStockData.ticker}_perf`] = (compareSlicedData[index].price / basePriceCompare - 1) * 100;
-            }
-            return point;
-        });
-    }
-
-    return mainSlicedData.map(point => ({
-        date: point.date,
-        volume: point.volume,
-        [`${stockData.ticker}_price`]: point.price,
+    return slicedData.map((point, index) => ({
+      ...point,
+      price: point.price,
+      ma50: ma50[index],
+      ma200: ma200[index],
     }));
-
-  }, [stockData, comparisonStockData, visibleDataCount]);
+  }, [stockData, selectedTimeRange]);
 
 
   useEffect(() => {
@@ -269,14 +243,9 @@ function StockPageContent() {
     setCurrent(index);
   };
   
-  const handleZoom = (direction: 'in' | 'out') => {
-    if (direction === 'in') {
-      setVisibleDataCount(prev => Math.max(30, prev - 30));
-    } else {
-      setVisibleDataCount(prev => Math.min(stockData?.chartData.length || 90, prev + 30));
-    }
+  const handleOverlayChange = (overlay: keyof typeof chartOverlays) => {
+    setChartOverlays(prev => ({...prev, [overlay]: !prev[overlay]}));
   }
-
 
   if (isLoading) {
     return <StockPageSkeleton />;
@@ -297,6 +266,7 @@ function StockPageContent() {
 
   const formatVolume = (value: number) => {
     if (!value) return "0";
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
     if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
     return value.toString();
@@ -326,7 +296,7 @@ function StockPageContent() {
                 <Bell className="mr-2" />
                 Alert
             </Button>
-            <Dialog open={isCompareDialogOpen} onOpenChange={setCompareDialogOpen}>
+             <Dialog open={isCompareDialogOpen} onOpenChange={setCompareDialogOpen}>
                 <DialogTrigger asChild>
                     <Button variant="outline" disabled={isComparing}>
                         {isComparing ? <AlertCircle className="mr-2 animate-pulse"/> : <GitCompareArrows className="mr-2" />}
@@ -361,20 +331,8 @@ function StockPageContent() {
                 <Download className="mr-2" />
                 Export
             </Button>
-            {comparisonStockData && (
-                <Button variant="destructive" onClick={clearComparison}>
-                    <XIcon className="mr-2" />
-                    Clear Comparison ({comparisonStockData.ticker})
-                </Button>
-            )}
         </div>
-        {compareError && (
-             <Alert variant="destructive" className="mt-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Comparison Error</AlertTitle>
-                <AlertDescription>{compareError}</AlertDescription>
-            </Alert>
-        )}
+        
         {stockData.dataSource === 'mock' && (
             <Alert>
                 <Info className="h-4 w-4" />
@@ -387,94 +345,79 @@ function StockPageContent() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex-1">
-                <CardTitle>{comparisonStockData ? 'Performance Comparison' : 'Price Chart'} ({visibleDataCount}-day)</CardTitle>
-                 <CardDescription>
-                    {comparisonStockData 
-                        ? `Normalized performance of ${stockData.ticker} vs ${comparisonStockData.ticker}`
-                        : 'Price and volume chart'
-                    }
-                </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={visibleDataCount <= 30}>
-                    <ZoomIn className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={visibleDataCount >= stockData.chartData.length}>
-                    <ZoomOut className="h-4 w-4" />
-                </Button>
+        <CardHeader>
+             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                    {timeRanges.map(range => (
+                        <Button 
+                            key={range.label} 
+                            variant={selectedTimeRange === range.label ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedTimeRange(range.label)}
+                        >
+                            {range.label}
+                        </Button>
+                    ))}
+                </div>
+                 <div className="flex items-center gap-2 flex-wrap">
+                    <Button variant="outline" size="sm">Price</Button>
+                    <Button variant="outline" size="sm">PE Ratio</Button>
+                    <Button variant="outline" size="sm">More</Button>
+                </div>
             </div>
         </CardHeader>
         <CardContent>
           <div className="w-full h-96">
             <ResponsiveContainer>
               <ComposedChart data={chartData}>
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickMargin={5} />
-                <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" domain={['auto', 'auto']} tick={{fontSize: 12}} tickFormatter={(value) => comparisonStockData ? `${value.toFixed(0)}%` : `$${value.toFixed(0)}`} label={{ value: comparisonStockData ? 'Performance %' : 'Price $', angle: -90, position: 'insideLeft', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}} />
-                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} label={{ value: 'Volume', angle: 90, position: 'insideRight', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}}/>
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={(val) => new Date(val).toLocaleDateString('en-US', {month: 'short', year: '2-digit'})} tickMargin={5} />
+                <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={formatVolume} label={{ value: 'Volume', angle: -90, position: 'insideLeft', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}}/>
+                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" tick={{fontSize: 12}} tickFormatter={(value) => `$${value.toFixed(0)}`} label={{ value: 'Price $', angle: 90, position: 'insideRight', style: {textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))'}}}/>
+
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
                   }}
                   formatter={(value: any, name: string) => {
-                     const ticker = name.split('_')[0];
-                     const type = name.split('_')[1];
-                     if (type === 'perf') return [`${(value as number).toFixed(2)}%`, `${ticker} Performance`];
-                     if (type === 'price') return [`$${(value as number).toFixed(2)}`, `${ticker} Price`];
+                     if (name === 'price') return [`$${(value as number).toFixed(2)}`, 'Price'];
+                     if (name === 'ma50') return [`$${(value as number).toFixed(2)}`, '50 DMA'];
+                     if (name === 'ma200') return [`$${(value as number).toFixed(2)}`, '200 DMA'];
                      if (name === 'volume') return [formatVolume(value as number), 'Volume'];
                      return [value, name];
                   }}
+                   labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 />
-                <Legend />
-                {comparisonStockData ? (
-                    <>
-                        <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_perf`} name={`${stockData.ticker} Perf.`} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                        <Line yAxisId="left" type="monotone" dataKey={`${comparisonStockData.ticker}_perf`} name={`${comparisonStockData.ticker} Perf.`} stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
-                    </>
-                ) : (
-                    <Line yAxisId="left" type="monotone" dataKey={`${stockData.ticker}_price`} name={stockData.ticker} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                )}
-                <Bar yAxisId="right" dataKey="volume" name="Volume" fill="hsl(var(--border))" barSize={20} />
+                
+                {chartOverlays.price && <Line yAxisId="right" type="monotone" dataKey='price' name="Price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />}
+                {chartOverlays.ma50 && <Line yAxisId="right" type="monotone" dataKey="ma50" name="50 DMA" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />}
+                {chartOverlays.ma200 && <Line yAxisId="right" type="monotone" dataKey="ma200" name="200 DMA" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />}
+                {chartOverlays.volume && <Bar yAxisId="left" dataKey="volume" name="Volume" fill="hsl(var(--border))" barSize={20} />}
+              
               </ComposedChart>
             </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="price" checked={chartOverlays.price} onCheckedChange={() => handleOverlayChange('price')} />
+                <Label htmlFor="price" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Price on BSE</Label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <Checkbox id="ma50" checked={chartOverlays.ma50} onCheckedChange={() => handleOverlayChange('ma50')}/>
+                <Label htmlFor="ma50" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">50 DMA</Label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <Checkbox id="ma200" checked={chartOverlays.ma200} onCheckedChange={() => handleOverlayChange('ma200')}/>
+                <Label htmlFor="ma200" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">200 DMA</Label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <Checkbox id="volume" checked={chartOverlays.volume} onCheckedChange={() => handleOverlayChange('volume')}/>
+                <Label htmlFor="volume" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Volume</Label>
+              </div>
           </div>
         </CardContent>
       </Card>
 
-      {comparisonStockData && (
-        <Card>
-            <CardHeader>
-                <CardTitle>Fundamentals Comparison</CardTitle>
-                <CardDescription>Key metrics for {stockData.ticker} vs {comparisonStockData.ticker}.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Metric</TableHead>
-                            <TableHead className="text-right">{stockData.ticker}</TableHead>
-                            <TableHead className="text-right">{comparisonStockData.ticker}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {stockData.fundamentalsData.map((item, index) => {
-                            const compareItem = comparisonStockData?.fundamentalsData.find(c => c.label === item.label);
-                            return (
-                                <TableRow key={item.label}>
-                                    <TableCell className="font-medium">{item.label}</TableCell>
-                                    <TableCell className="text-right">{item.value}</TableCell>
-                                    <TableCell className="text-right">{compareItem ? compareItem.value : 'N/A'}</TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-      )}
-      
       <div>
         <div className="flex space-x-2 mb-4 overflow-x-auto">
             {TABS.map((tab, index) => {
