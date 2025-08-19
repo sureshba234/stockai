@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, PlusCircle, Trash2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { CalendarIcon, Loader2, PlusCircle, Trash2, TrendingUp, TrendingDown, Wallet, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { stockData as stockList } from "@/lib/stocks";
@@ -98,7 +98,7 @@ function AddTransactionDialog({ onTransactionAdd }: { onTransactionAdd: () => vo
                                 (stock) => stock.ticker.toUpperCase() === field.value.toUpperCase()
                               )?.name
                             : "Select stock"}
-                           <TrendingUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -336,5 +336,3 @@ export default function PortfolioPage() {
     </div>
   );
 }
-
-    
