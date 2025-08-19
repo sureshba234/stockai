@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Fetches news articles for a given topic, generates summaries, and analyzes sentiment.
@@ -113,19 +114,23 @@ const getNewsAndSentimentFlow = ai.defineFlow(
   },
   async ({ topic }) => {
     const rawArticles = await fetchNewsForTopic({ topic });
-    const analyzedArticles = [];
-
-    for (const article of rawArticles) {
-      const { output } = await prompt({
+    const analysisPromises = rawArticles.map(article => 
+      prompt({
         title: article.title,
         content: article.content,
-      });
-      analyzedArticles.push({
+      })
+    );
+    
+    const analysisResults = await Promise.all(analysisPromises);
+    
+    const analyzedArticles = rawArticles.map((article, index) => {
+      const { output } = analysisResults[index];
+      return {
         ...article,
         summary: output?.summary || 'Could not generate summary.',
         sentiment: output?.sentiment || 'Neutral',
-      });
-    }
+      };
+    });
 
     return { articles: analyzedArticles };
   }

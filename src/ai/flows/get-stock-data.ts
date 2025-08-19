@@ -63,8 +63,10 @@ const getStockDataTool = ai.defineTool(
             try {
                 console.log(`Attempting to fetch data for ${ticker} from ${provider.name}...`);
                 const data = await provider.fetcher(ticker);
-                console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
-                return { ...data, dataSource: 'live' as const };
+                if (data) {
+                    console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
+                    return { ...data, dataSource: 'live' as const };
+                }
             } catch (error: any) {
                 console.warn(`${provider.name} fetch failed for ${ticker}: ${error.message}. Trying next provider...`);
             }
@@ -78,7 +80,7 @@ const getStockDataTool = ai.defineTool(
 
 // #region API Fetchers
 
-async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.POLYGON_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Polygon.io API key not configured.");
 
@@ -88,7 +90,7 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error(`Polygon API request for ${path} failed with status ${res.status}`);
         const data = await res.json();
-        if (data.status !== 'OK') throw new Error(`Polygon API error for ${path}: ${data.error || data.message}`);
+        if (data.status !== 'OK' && data.status !== 'DELAYED') throw new Error(`Polygon API error for ${path}: ${data.error || data.message}`);
         return data;
     }
 
@@ -96,28 +98,28 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
     const from = getDateMonthsAgo(3);
 
     const [details, prevDay, news, aggregates] = await Promise.all([
-        get(`/v3/reference/tickers/${ticker}`),
-        get(`/v2/aggs/ticker/${ticker}/prev`),
-        get(`/v2/reference/news`, { ticker }),
-        get(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}`, { sort: 'asc', limit: '90' })
+        get(`/v3/reference/tickers/${ticker}`).catch(() => null),
+        get(`/v2/aggs/ticker/${ticker}/prev`).catch(() => null),
+        get(`/v2/reference/news`, { ticker }).catch(() => null),
+        get(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}`, { sort: 'asc', limit: '90' }).catch(() => null)
     ]);
 
-    const profile = details.results;
-    const quote = prevDay.results?.[0];
-    if (!profile || !quote) throw new Error("Could not retrieve profile or quote from Polygon.");
+    const profile = details?.results;
+    const quote = prevDay?.results?.[0];
+    if (!profile || !quote) return null;
     
     const price = quote.c.toFixed(2);
     const change = (quote.c - quote.o).toFixed(2);
     const changePercent = (((quote.c - quote.o) / quote.o) * 100).toFixed(2);
     const isUp = parseFloat(change) >= 0;
 
-    const chartData = (aggregates.results || []).map((agg: any) => ({
+    const chartData = (aggregates?.results || []).map((agg: any) => ({
         date: new Date(agg.t).toISOString().split('T')[0],
         price: parseFloat(agg.c.toFixed(2)),
         volume: agg.v,
     }));
 
-    const newsData = (news.results || []).slice(0, 5).map((item: any) => ({
+    const newsData = (news?.results || []).slice(0, 5).map((item: any) => ({
         title: item.title,
         source: item.publisher?.name || 'N/A',
         url: item.article_url,
@@ -146,7 +148,7 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
 }
 
 
-async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.FINANCIAL_MODELING_PREP_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Financial Modeling Prep API key not configured.");
 
@@ -164,28 +166,28 @@ async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'data
     const from = getDateMonthsAgo(3);
 
     const [profile, quote, news, history] = await Promise.all([
-        get(`/v3/profile/${ticker}`),
-        get(`/v3/quote/${ticker}`),
-        get(`/v1/stock_news`, { tickers: ticker, limit: 5 }),
-        get(`/v3/historical-price-full/${ticker}`, { from, to }),
+        get(`/v3/profile/${ticker}`).catch(() => null),
+        get(`/v3/quote/${ticker}`).catch(() => null),
+        get(`/v1/stock_news`, { tickers: ticker, limit: 5 }).catch(() => null),
+        get(`/v3/historical-price-full/${ticker}`, { from, to }).catch(() => null),
     ]);
 
-    const profileData = profile[0];
-    const quoteData = quote[0];
-    if (!profileData || !quoteData) throw new Error("Could not retrieve profile or quote from FMP.");
+    const profileData = profile?.[0];
+    const quoteData = quote?.[0];
+    if (!profileData || !quoteData) return null;
 
     const price = quoteData.price.toFixed(2);
     const change = quoteData.change.toFixed(2);
     const changePercent = quoteData.changesPercentage.toFixed(2);
     const isUp = quoteData.change >= 0;
 
-    const chartData = (history.historical || []).map((day: any) => ({
+    const chartData = (history?.historical || []).map((day: any) => ({
         date: day.date,
         price: parseFloat(day.close.toFixed(2)),
         volume: day.volume,
     })).reverse();
 
-    const newsData = news.map((item: any) => ({
+    const newsData = (news || []).map((item: any) => ({
         title: item.title,
         source: item.site,
         url: item.url,
@@ -214,7 +216,7 @@ async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'data
 }
 
 
-async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.FINNHUB_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Finnhub API key not configured.");
     
@@ -230,21 +232,21 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
     }
     
     const [profile, quote, news] = await Promise.all([
-        get('/stock/profile2', { symbol: ticker }),
-        get('/quote', { symbol: ticker }),
-        get('/company-news', { symbol: ticker, from: getDateMonthsAgo(1), to: getTodayDate() })
+        get('/stock/profile2', { symbol: ticker }).catch(() => null),
+        get('/quote', { symbol: ticker }).catch(() => null),
+        get('/company-news', { symbol: ticker, from: getDateMonthsAgo(1), to: getTodayDate() }).catch(() => null)
     ]);
 
-    if (!profile.ticker) throw new Error(`Could not retrieve company profile for ${ticker}.`);
+    if (!profile?.ticker || !quote) return null;
 
     const candle = await get('/stock/candle', {
       symbol: ticker,
       resolution: 'D',
       from: Math.floor(new Date(getDateMonthsAgo(3)).getTime() / 1000).toString(),
       to: Math.floor(new Date().getTime() / 1000).toString(),
-    });
+    }).catch(() => null);
 
-    if (!candle.c) throw new Error(`Could not retrieve chart data for ${ticker}.`);
+    if (!candle?.c) return null;
 
     const chartData = candle.t.map((timestamp: number, index: number) => ({
         date: new Date(timestamp * 1000).toISOString().split('T')[0],
@@ -256,7 +258,7 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
     const change = quote.d?.toFixed(2);
     const changePercent = quote.dp?.toFixed(2);
     const isUp = quote.d ? quote.d >= 0 : false;
-    const newsData = news.slice(0, 5).map((item: any) => ({
+    const newsData = (news || []).slice(0, 5).map((item: any) => ({
         title: item.headline, source: item.source, url: item.url,
         publishedAt: new Date(item.datetime * 1000).toISOString().split('T')[0],
     }));
@@ -279,7 +281,7 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
 }
 
 
-async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.TWELVE_DATA_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Twelve Data API key not configured.");
     
@@ -294,26 +296,26 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
     }
     
     const [profile, quote, news, timeSeries] = await Promise.all([
-        get('/profile', { symbol: ticker }),
-        get('/quote', { symbol: ticker }),
-        get('/news', { symbol: ticker, limit: '5'}),
-        get('/time_series', { symbol: ticker, interval: '1day', outputsize: '90' }),
+        get('/profile', { symbol: ticker }).catch(() => null),
+        get('/quote', { symbol: ticker }).catch(() => null),
+        get('/news', { symbol: ticker, limit: '5'}).catch(() => null),
+        get('/time_series', { symbol: ticker, interval: '1day', outputsize: '90' }).catch(() => null),
     ]);
 
-    if (!profile.name || !quote.change) throw new Error("Could not retrieve profile or quote from Twelve Data.");
+    if (!profile?.name || !quote?.change) return null;
     
     const price = parseFloat(quote.close).toFixed(2);
     const change = parseFloat(quote.change).toFixed(2);
     const changePercent = parseFloat(quote.percent_change).toFixed(2);
     const isUp = parseFloat(change) >= 0;
 
-    const chartData = (timeSeries.values || []).map((item: any) => ({
+    const chartData = (timeSeries?.values || []).map((item: any) => ({
         date: item.datetime,
         price: parseFloat(item.close),
         volume: parseInt(item.volume, 10),
     })).reverse();
     
-    const newsData = (news.articles || []).map((item: any) => ({
+    const newsData = (news?.articles || []).map((item: any) => ({
         title: item.title,
         source: item.source,
         url: item.url,
@@ -338,7 +340,7 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
 }
 
 
-async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error(`Alpha Vantage API key not configured.`);
 
@@ -353,14 +355,14 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
     }
     
     const [overviewData, quoteData, chartDataRaw, newsData] = await Promise.all([
-        get({ function: 'OVERVIEW', symbol: ticker }),
-        get({ function: 'GLOBAL_QUOTE', symbol: ticker }).then(d => d['Global Quote']),
-        get({ function: 'TIME_SERIES_DAILY', symbol: ticker }).then(d => d['Time Series (Daily)']),
-        get({ function: 'NEWS_SENTIMENT', tickers: ticker, limit: 5 }).then(d => d.feed || [])
+        get({ function: 'OVERVIEW', symbol: ticker }).catch(() => null),
+        get({ function: 'GLOBAL_QUOTE', symbol: ticker }).then(d => d?.['Global Quote']).catch(() => null),
+        get({ function: 'TIME_SERIES_DAILY', symbol: ticker }).then(d => d?.['Time Series (Daily)']).catch(() => null),
+        get({ function: 'NEWS_SENTIMENT', tickers: ticker, limit: 5 }).then(d => d?.feed || []).catch(() => []),
     ]);
 
-    if (!overviewData.Symbol || !quoteData || Object.keys(quoteData).length === 0 || !chartDataRaw) {
-        throw new Error('Incomplete data received from Alpha Vantage.');
+    if (!overviewData?.Symbol || !quoteData || Object.keys(quoteData).length === 0 || !chartDataRaw) {
+        return null;
     }
 
     const chartData = Object.entries(chartDataRaw).slice(0, 90).map(([date, data]) => ({
@@ -369,7 +371,7 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
         volume: parseInt((data as any)['5. volume'], 10)
     })).reverse();
     
-    const news = newsData.map((item: any) => ({
+    const news = (newsData || []).map((item: any) => ({
         title: item.title, source: item.source, url: item.url,
         publishedAt: formatNewsDate(item.time_published),
     }));
@@ -397,7 +399,7 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
     };
 }
 
-async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'>> {
+async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
     const apiKey = process.env.MARKETSTACK_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Marketstack API key not configured.");
     
@@ -412,14 +414,14 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
     };
     
     const [eodData, tickerData, newsData] = await Promise.all([
-        get('/eod', { symbols: ticker, limit: '90' }),
-        get('/tickers', { ticker_symbols: ticker }),
-        get('/news', { tickers: ticker, limit: '5' })
+        get('/eod', { symbols: ticker, limit: '90' }).catch(() => null),
+        get('/tickers', { symbols: ticker }).catch(() => null),
+        get('/news', { tickers: ticker, limit: '5' }).catch(() => null)
     ]);
     
-    const dailyData = eodData.data;
-    const profile = tickerData.data[0];
-    if (!dailyData || dailyData.length < 2 || !profile) throw new Error("Incomplete data from Marketstack");
+    const dailyData = eodData?.data;
+    const profile = tickerData?.data?.[0];
+    if (!dailyData || dailyData.length < 2 || !profile) return null;
     
     const latest = dailyData[0];
     const previous = dailyData[1];
@@ -435,7 +437,7 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
         volume: d.volume,
     })).reverse();
     
-    const news = (newsData.data || []).map((item: any) => ({
+    const news = (newsData?.data || []).map((item: any) => ({
         title: item.title,
         source: item.source,
         url: item.url,
