@@ -1,4 +1,3 @@
-// src/ai/flows/generate-ml-notes.ts
 'use server';
 
 /**
@@ -44,7 +43,14 @@ const fetchFeatureImportance = ai.defineTool(
   async (input) => {
     // Placeholder implementation - replace with actual feature importance retrieval logic
     console.log(`Fetching feature importance for model: ${input.modelName}`);
-    return { /* feature: importance score */ };
+    // Returning dummy data as the actual implementation is a placeholder.
+    // In a real scenario, this would fetch actual importance scores.
+    const dummyData: Record<string, number> = {};
+    const features = input.modelName.split(',').map(s => s.trim());
+    features.forEach(feature => {
+      dummyData[feature] = Math.random();
+    });
+    return dummyData;
   }
 );
 
@@ -59,12 +65,8 @@ Model Name: {{{modelName}}}
 Feature List: {{{featureList}}}
 Performance Metrics: {{{performanceMetrics}}}
 
-Consider feature importance when generating feature handling notes. Use the fetchFeatureImportance tool to get feature importances for the model.
-
-Feature Handling Notes:
-{{#tool_call fetchFeatureImportance modelName=modelName}}
-Explainability Notes:
-Confidence Notes:`,
+When generating the feature handling notes, you MUST use the fetchFeatureImportance tool to get the feature importance scores for the specified model and incorporate that information into the notes.
+`,
 });
 
 const generateMLNotesFlow = ai.defineFlow(
@@ -73,7 +75,7 @@ const generateMLNotesFlow = ai.defineFlow(
     inputSchema: MLNotesInputSchema,
     outputSchema: MLNotesOutputSchema,
   },
-  async input => {
+  async (input) => {
     const {output} = await prompt(input);
     return output!;
   }
