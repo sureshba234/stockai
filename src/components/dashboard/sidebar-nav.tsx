@@ -38,7 +38,7 @@ const secondaryNavLinks: NavLink[] = [
 
 const genAILinks: NavLink[] = [
   { href: "/dashboard/predictions", label: "Predictions", icon: Wand },
-  { href: "/dashboard/analytics", label: "Analytics", icon: Sheet },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart },
   { href: "/dashboard/relations", label: "Asset Relations", icon: LinkIcon },
   { href: "/dashboard/ml-notes", label: "ML Notes", icon: BotMessageSquare },
   { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
