@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useEffect, useState, Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Legend, Line, Bar } from 'recharts';
-import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon, DollarSign } from 'lucide-react';
+import { Newspaper, FileText, Bot, AlertCircle, Bell, Star, GitCompareArrows, Download, ZoomIn, ZoomOut, X as XIcon } from 'lucide-react';
 import { getStockData } from "@/ai/flows/get-stock-data";
 import type { StockDataOutput } from "@/ai/schemas/stock-data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -495,7 +496,6 @@ function StockPageContent() {
                                 <Card key={item.label}>
                                     <CardHeader className="pb-2">
                                         <CardDescription>{item.label}</CardDescription>
-
                                         <CardTitle className="text-2xl">{item.value}</CardTitle>
                                     </CardHeader>
                                 </Card>
@@ -568,3 +568,4 @@ export default function StocksPage() {
         </Suspense>
     );
 }
+
