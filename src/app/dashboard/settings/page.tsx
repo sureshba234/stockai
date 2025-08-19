@@ -12,20 +12,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
   email: z.string().email("Please enter a valid email."),
-});
-
-const apiKeysFormSchema = z.object({
-    openaiApiKey: z.string().optional(),
-    polygonApiKey: z.string().optional(),
-    financialModelingPrepApiKey: z.string().optional(),
-    finnhubApiKey: z.string().optional(),
-    twelveDataApiKey: z.string().optional(),
-    alphaVantageApiKey: z.string().optional(),
-    marketstackApiKey: z.string().optional(),
 });
 
 const appearanceFormSchema = z.object({
@@ -33,7 +25,6 @@ const appearanceFormSchema = z.object({
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
-type ApiKeysFormData = z.infer<typeof apiKeysFormSchema>;
 type AppearanceFormData = z.infer<typeof appearanceFormSchema>;
 
 export default function SettingsPage() {
@@ -49,19 +40,6 @@ export default function SettingsPage() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: { name: "", email: "" },
   });
-
-  const apiKeysForm = useForm<ApiKeysFormData>({
-    resolver: zodResolver(apiKeysFormSchema),
-    defaultValues: { 
-        openaiApiKey: "",
-        polygonApiKey: "",
-        financialModelingPrepApiKey: "",
-        finnhubApiKey: "", 
-        twelveDataApiKey: "",
-        alphaVantageApiKey: "",
-        marketstackApiKey: "",
-     },
-  });
   
   const appearanceForm = useForm<AppearanceFormData>({
     resolver: zodResolver(appearanceFormSchema),
@@ -76,15 +54,10 @@ export default function SettingsPage() {
       } else {
         profileForm.reset({ name: "User", email: "user@example.com" });
       }
-
-      const storedApiKeys = localStorage.getItem("apiKeys");
-      if (storedApiKeys) {
-        apiKeysForm.reset(JSON.parse(storedApiKeys));
-      }
       
       appearanceForm.setValue("theme", theme || "system");
     }
-  }, [isClient, profileForm, apiKeysForm, theme, appearanceForm]);
+  }, [isClient, profileForm, theme, appearanceForm]);
   
   useEffect(() => {
     appearanceForm.setValue("theme", theme || "system");
@@ -95,18 +68,6 @@ export default function SettingsPage() {
     toast({
       title: "Profile Updated",
       description: "Your profile information has been saved.",
-    });
-  }
-  
-  function onApiKeysSubmit(data: ApiKeysFormData) {
-    localStorage.setItem("apiKeys", JSON.stringify(data));
-    // NOTE: This is NOT a secure way to handle API keys for a real production app.
-    // This is a workaround for the demo environment. A real app would send this
-    // to a secure backend that sets an HttpOnly cookie or uses a secure secret manager.
-    // To make this work for the demo, we are asking the user to refresh.
-    toast({
-      title: "API Keys Saved",
-      description: "Your API keys have been saved locally. Please refresh the page for them to take effect.",
     });
   }
   
@@ -159,75 +120,32 @@ export default function SettingsPage() {
       
       <Separator />
 
-      <Card>
+       <Card>
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
-          <CardDescription>Manage your API keys for financial data providers. Keys are stored in your browser's local storage and require a page refresh to apply.</CardDescription>
+          <CardTitle>API Keys for Live Data</CardTitle>
+          <CardDescription>
+            To fetch live financial data, you must provide your own API keys from third-party providers.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...apiKeysForm}>
-            <form onSubmit={apiKeysForm.handleSubmit(onApiKeysSubmit)} className="space-y-6">
-                <FormField control={apiKeysForm.control} name="openaiApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>OpenAI API Key (Primary for Agent)</FormLabel>
-                        <FormControl><Input type="password" placeholder="sk-..." {...field} /></FormControl>
-                        <FormDescription>Used for the conversational AI agent on the dashboard.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={apiKeysForm.control} name="polygonApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Polygon.io API Key (Primary)</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your Polygon.io API key" {...field} /></FormControl>
-                        <FormDescription>High-quality, primary data source.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={apiKeysForm.control} name="financialModelingPrepApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Financial Modeling Prep API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your FMP API key" {...field} /></FormControl>
-                        <FormDescription>Excellent source for fundamentals and general data.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={apiKeysForm.control} name="finnhubApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Finnhub API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your Finnhub API key" {...field} /></FormControl>
-                        <FormDescription>Good all-around data source.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={apiKeysForm.control} name="twelveDataApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Twelve Data API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your Twelve Data API key" {...field} /></FormControl>
-                         <FormDescription>Good for real-time and historical data.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={apiKeysForm.control} name="alphaVantageApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Alpha Vantage API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your Alpha Vantage API key" {...field} /></FormControl>
-                        <FormDescription>A free but rate-limited fallback source.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={apiKeysForm.control} name="marketstackApiKey" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Marketstack API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Enter your Marketstack API key" {...field} /></FormControl>
-                        <FormDescription>Another fallback data source.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-              <Button type="submit">Save API Keys</Button>
-            </form>
-          </Form>
+           <Alert>
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Action Required</AlertTitle>
+              <AlertDescription>
+                <p>API keys must be set as environment variables. Please edit the `.env` file in the project's file explorer and add your keys. The app will automatically use them once they are set.</p>
+                <p className="font-mono text-xs bg-muted p-2 rounded-md mt-2 whitespace-pre-wrap">{`POLYGON_API_KEY=your_key_here
+FINANCIAL_MODELING_PREP_API_KEY=your_key_here
+FINNHUB_API_KEY=your_key_here
+TWELVE_DATA_API_KEY=your_key_here
+ALPHA_VANTAGE_API_KEY=your_key_here
+MARKETSTACK_API_KEY=your_key_here
+# You can get free keys from most of these providers.`}
+                </p>
+              </AlertDescription>
+            </Alert>
         </CardContent>
       </Card>
+
 
       <Separator />
 
