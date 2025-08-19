@@ -52,9 +52,7 @@ const stockAgentFlow = ai.defineFlow(
     
     const { output } = await agentPrompt.generate({
         model,
-        input: {
-            query: input.query
-        },
+        input: input.query,
         tools: [getStockData, getNewsAndSentiment],
         output: {
             schema: StockAgentOutputSchema,
