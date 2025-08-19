@@ -73,6 +73,71 @@ const screeners = [
     description: "Companies which have been consistently reducing their debt.",
     filter: "Financial Services",
   },
+  {
+    title: "Growth without dilution",
+    description: "Companies with less than 10% dilution over 10 years.",
+    filter: "Technology",
+  },
+  {
+    title: "Peter Lynch stock screener",
+    description: "The Screen identifies companies that are “fast growers” looking for consistently profitable, relatively unknown, low-debt, reasonably priced stocks with high, but not excessive, growth.",
+    filter: "Technology",
+  },
+  {
+    title: "Penny stocks market cap less than 10lac",
+    description: "Find penny stocks with a market capitalization under 10 lakh.",
+    filter: "Industrials",
+  },
+  {
+    title: "Highest YOY Quarterly profit growth",
+    description: "Stocks with the highest Quarter on Quarter Growth in Profits.",
+    filter: "Technology",
+  },
+  {
+    title: "All Stocks",
+    description: "A complete list of all available stocks.",
+    filter: "All",
+  },
+  {
+    title: "Best of latest quarter",
+    description: "Companies with the best latest quarterly numbers.",
+    filter: "Financial Services",
+  },
+  {
+    title: "CANSLIM",
+    description: "A method of screening for stocks based on seven characteristics developed by William O'Neil.",
+    filter: "Technology",
+  },
+  {
+    title: "High Quality Businesses",
+    description: "Good ROCE, Profit growth faster than Sales growth on an average, Sales growth more than 10%, debt to equity less than 0.25.",
+    filter: "Consumer Defensive",
+  },
+  {
+    title: "Book value over 5 times price",
+    description: "Find stocks where the book value is significantly higher than the current market price.",
+    filter: "Financial Services",
+  },
+  {
+    title: "Debt free companies",
+    description: "Companies that are debt free and have a market cap greater than 500 cr.",
+    filter: "Financial Services",
+  },
+  {
+    title: "Undervalued stocks",
+    description: "Stocks with market cap above 200 crore and p/e less then 5 and CROI is > 15%.",
+    filter: "Financial Services",
+  },
+  {
+    title: "Top 10 Best Stocks below Rs 10",
+    description: "Find the top 10 best stocks trading below Rs 10.",
+    filter: "Industrials",
+  },
+  {
+    title: "Bearish Crossovers",
+    description: "50 day moving average cut the 200 day MA from Above.",
+    filter: "Technology",
+  },
 ];
 
 
