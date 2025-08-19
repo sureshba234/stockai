@@ -8,31 +8,31 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
+    --card: 210 40% 100%;
     --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
+    --popover: 210 40% 100%;
     --popover-foreground: 224 71.4% 4.1%;
     --primary: 180 100% 25.1%;
     --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 9.8% 46.1%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 35.6 91.7% 56.5%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 224 71.4% 4.1%;
+    --radius: 0.5rem;
     --chart-1: 220 90% 55%;
     --chart-2: 160 90% 40%;
     --chart-3: 340 90% 55%;
     --chart-4: 40 90% 55%;
     --chart-5: 280 90% 55%;
-    --radius: 0.5rem;
     --sidebar-background: 225 9% 98%;
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: 220 90% 55%;
@@ -42,10 +42,11 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 224 71.4% 4.1%;
   }
+
   .dark {
     --background: 225 10% 10%;
     --foreground: 210 20% 98%;
-    --card: 225 10% 10%;
+    --card: 225 10% 11%;
     --card-foreground: 210 20% 98%;
     --popover: 225 10% 10%;
     --popover-foreground: 210 20% 98%;
@@ -84,5 +85,19 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .card, .btn {
+    @apply transition-all duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-md transform -translate-y-px;
+  }
+
+  .btn:hover {
+      @apply transform scale-[1.02] shadow-md;
   }
 }
