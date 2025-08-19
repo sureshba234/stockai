@@ -55,11 +55,14 @@ const stockAgentFlow = ai.defineFlow(
     // Prefer OpenAI if available, otherwise fall back to Google AI.
     const model = process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash';
     
-    const {output} = await agentPrompt.generate({
-      input,
+    const llmResponse = await ai.generate({
+      prompt: agentPrompt.prompt,
+      input: input,
       model,
+      tools: agentPrompt.config.tools,
+      output: { schema: agentPrompt.config.output.schema }
     });
-    
-    return output!;
+
+    return llmResponse.output!;
   }
 );
