@@ -6,16 +6,16 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { navigationLinks } from "@/components/dashboard/sidebar-nav";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Link from "next/link";
-import { Search, LineChart, History } from "lucide-react";
+import { Search, History } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import React from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { stockData } from "@/lib/stocks";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import Image from "next/image";
 import { generateMockMarketMovers } from "@/lib/mock-stock-data";
+import { cn } from "@/lib/utils";
 
 type Mover = {
     ticker: string;
@@ -51,10 +51,9 @@ function StockSearch() {
     setQuery("");
     setIsOpen(false);
     
-    // Add to recent searches
     setRecentSearches(prev => {
         const newRecents = [ticker, ...prev.filter(t => t !== ticker)];
-        return newRecents.slice(0, 5); // Keep only the 5 most recent
+        return newRecents.slice(0, 5);
     })
   };
 
@@ -82,70 +81,68 @@ function StockSearch() {
 
   return (
     <div className="relative" ref={searchRef}>
-      <Command shouldFilter={false} className="overflow-visible bg-transparent">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <CommandInput
-            value={query}
-            onValueChange={setQuery}
-            onFocus={() => setIsOpen(true)}
-            placeholder="Search stocks..."
-            className="w-full pl-9 pr-4 h-10 border rounded-lg md:w-[200px] lg:w-[336px]"
-          />
-        </div>
-        {isMounted && isOpen && (
-          <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md">
-            <CommandList>
-              {debouncedQuery.length === 0 && recentStockDetails.length > 0 && (
-                 <CommandGroup heading="Recent Searches">
-                    {recentStockDetails.map((stock) => (
-                         <CommandItem
-                            key={`recent-${stock.ticker}`}
-                            value={`recent-${stock.ticker}`}
-                            onSelect={() => handleSelect(stock.ticker)}
-                            className="cursor-pointer"
-                        >
-                            <History className="mr-2 h-4 w-4" />
-                            <span>{stock.name} ({stock.ticker})</span>
-                        </CommandItem>
-                    ))}
-                 </CommandGroup>
-              )}
-              {filteredStocks.length > 0 ? (
-                <CommandGroup heading="Suggestions">
-                  {filteredStocks.map((stock) => {
-                    const moverData = marketMovers[stock.ticker];
-                    return (
-                        <CommandItem
-                            key={stock.ticker}
-                            value={stock.ticker}
-                            onSelect={() => handleSelect(stock.ticker)}
-                            className="cursor-pointer flex justify-between items-center"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Image src={stock.logoUrl} alt={`${stock.name} logo`} width={24} height={24} className="rounded-full" />
-                                <div>
-                                    <span className="font-medium">{stock.ticker}</span>
-                                    <p className="text-xs text-muted-foreground">{stock.name}</p>
-                                </div>
-                            </div>
-                           {moverData && (
-                             <div className="text-right">
-                                <p className="font-mono text-sm">${moverData.price}</p>
-                                <p className={`text-xs ${moverData.isUp ? 'text-green-500' : 'text-red-500'}`}>{moverData.isUp ? '+' : ''}{moverData.changePercent}</p>
-                            </div>
-                           )}
-                        </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              ) : (
-                debouncedQuery.length > 0 && <CommandEmpty>No results found.</CommandEmpty>
-              )}
-            </CommandList>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Search stocks..."
+          className="w-full pl-9 pr-4 h-10 border rounded-lg md:w-[200px] lg:w-[336px]"
+        />
+      </div>
+      {isMounted && isOpen && (
+        <div className="absolute top-full z-50 mt-2 w-full md:w-[200px] lg:w-[336px] rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden">
+          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden">
+            {debouncedQuery.length === 0 && recentStockDetails.length > 0 && (
+              <div className="p-1">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Recent Searches</div>
+                {recentStockDetails.map((stock) => (
+                  <button
+                    key={`recent-${stock.ticker}`}
+                    onClick={() => handleSelect(stock.ticker)}
+                    className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <History className="mr-2 h-4 w-4" />
+                    <span>{stock.name} ({stock.ticker})</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {filteredStocks.length > 0 ? (
+              <div className="p-1">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Suggestions</div>
+                {filteredStocks.map((stock) => {
+                  const moverData = marketMovers[stock.ticker];
+                  return (
+                    <button
+                      key={stock.ticker}
+                      onClick={() => handleSelect(stock.ticker)}
+                      className="relative flex w-full cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                          <Image src={stock.logoUrl} alt={`${stock.name} logo`} width={24} height={24} className="rounded-full" />
+                          <div>
+                              <span className="font-medium">{stock.ticker}</span>
+                              <p className="text-xs text-muted-foreground">{stock.name}</p>
+                          </div>
+                      </div>
+                     {moverData && (
+                       <div className="text-right">
+                          <p className="font-mono text-sm">${moverData.price}</p>
+                          <p className={cn("text-xs", moverData.isUp ? 'text-green-500' : 'text-red-500')}>{moverData.isUp ? '+' : ''}{moverData.changePercent}</p>
+                      </div>
+                     )}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              debouncedQuery.length > 0 && <div className="py-6 text-center text-sm">No results found.</div>
+            )}
           </div>
-        )}
-      </Command>
+        </div>
+      )}
     </div>
   );
 }
