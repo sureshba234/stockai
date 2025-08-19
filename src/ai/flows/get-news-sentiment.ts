@@ -84,6 +84,7 @@ const fetchNewsForTopic = ai.defineTool(
 
 const prompt = ai.definePrompt({
   name: 'summarizeAndAnalyzeNewsPrompt',
+  model: 'googleai/gemini-2.0-flash',
   input: {
     schema: z.object({
       title: z.string(),
