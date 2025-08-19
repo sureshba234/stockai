@@ -19,8 +19,12 @@ const profileFormSchema = z.object({
 });
 
 const apiKeysFormSchema = z.object({
+    polygonApiKey: z.string().optional(),
+    financialModelingPrepApiKey: z.string().optional(),
     finnhubApiKey: z.string().optional(),
+    twelveDataApiKey: z.string().optional(),
     alphaVantageApiKey: z.string().optional(),
+    marketstackApiKey: z.string().optional(),
 });
 
 const appearanceFormSchema = z.object({
@@ -47,7 +51,14 @@ export default function SettingsPage() {
 
   const apiKeysForm = useForm<ApiKeysFormData>({
     resolver: zodResolver(apiKeysFormSchema),
-    defaultValues: { finnhubApiKey: "", alphaVantageApiKey: "" },
+    defaultValues: { 
+        polygonApiKey: "",
+        financialModelingPrepApiKey: "",
+        finnhubApiKey: "", 
+        twelveDataApiKey: "",
+        alphaVantageApiKey: "",
+        marketstackApiKey: "",
+     },
   });
   
   const appearanceForm = useForm<AppearanceFormData>({
@@ -149,12 +160,36 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <Form {...apiKeysForm}>
-            <form onSubmit={apiKeysForm.handleSubmit(onApiKeysSubmit)} className="space-y-4">
+            <form onSubmit={apiKeysForm.handleSubmit(onApiKeysSubmit)} className="space-y-6">
+                <FormField control={apiKeysForm.control} name="polygonApiKey" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Polygon.io API Key (Primary)</FormLabel>
+                        <FormControl><Input type="password" placeholder="Enter your Polygon.io API key" {...field} /></FormControl>
+                        <FormDescription>High-quality, primary data source.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={apiKeysForm.control} name="financialModelingPrepApiKey" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Financial Modeling Prep API Key</FormLabel>
+                        <FormControl><Input type="password" placeholder="Enter your FMP API key" {...field} /></FormControl>
+                        <FormDescription>Excellent source for fundamentals and general data.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField control={apiKeysForm.control} name="finnhubApiKey" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Finnhub API Key</FormLabel>
                         <FormControl><Input type="password" placeholder="Enter your Finnhub API key" {...field} /></FormControl>
-                        <FormDescription>Used as the primary data source for stock information.</FormDescription>
+                        <FormDescription>Good all-around data source.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={apiKeysForm.control} name="twelveDataApiKey" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Twelve Data API Key</FormLabel>
+                        <FormControl><Input type="password" placeholder="Enter your Twelve Data API key" {...field} /></FormControl>
+                         <FormDescription>Good for real-time and historical data.</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )} />
@@ -162,7 +197,15 @@ export default function SettingsPage() {
                     <FormItem>
                         <FormLabel>Alpha Vantage API Key</FormLabel>
                         <FormControl><Input type="password" placeholder="Enter your Alpha Vantage API key" {...field} /></FormControl>
-                        <FormDescription>Used as a fallback data source.</FormDescription>
+                        <FormDescription>A free but rate-limited fallback source.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                 <FormField control={apiKeysForm.control} name="marketstackApiKey" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Marketstack API Key</FormLabel>
+                        <FormControl><Input type="password" placeholder="Enter your Marketstack API key" {...field} /></FormControl>
+                        <FormDescription>Another fallback data source.</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )} />
