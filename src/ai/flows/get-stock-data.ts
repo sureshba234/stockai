@@ -42,45 +42,48 @@ async function generateAIPrediction(ticker: string, name: string, price: string,
 }
 
 
-const getStockDataTool = ai.defineTool(
-    {
-        name: 'getStockDataTool',
-        description: 'Retrieves detailed data for a given stock ticker, trying a chain of APIs and falling back to mock data.',
-        inputSchema: StockDataInputSchema,
-        outputSchema: z.union([StockDataOutputSchema, z.null()]),
-    },
-    async ({ ticker }) => {
-        const providers = [
-            { name: "Polygon.io", fetcher: fetchFromPolygon },
-            { name: "Financial Modeling Prep", fetcher: fetchFromFMP },
-            { name: "Finnhub", fetcher: fetchFromFinnhub },
-            { name: "Twelve Data", fetcher: fetchFromTwelveData },
-            { name: "Alpha Vantage", fetcher: fetchFromAlphaVantage },
-            { name: "Marketstack", fetcher: fetchFromMarketstack },
-        ];
+const getStockDataFlow = ai.defineFlow(
+  {
+    name: 'getStockDataFlow',
+    inputSchema: StockDataInputSchema,
+    outputSchema: z.union([StockDataOutputSchema, z.null()]),
+  },
+  async ({ ticker }) => {
+    const providers = [
+        { name: "Polygon.io", fetcher: fetchFromPolygon },
+        { name: "Financial Modeling Prep", fetcher: fetchFromFMP },
+        { name: "Finnhub", fetcher: fetchFromFinnhub },
+        { name: "Twelve Data", fetcher: fetchFromTwelveData },
+        { name: "Alpha Vantage", fetcher: fetchFromAlphaVantage },
+        { name: "Marketstack", fetcher: fetchFromMarketstack },
+    ];
 
-        for (const provider of providers) {
-            try {
-                console.log(`Attempting to fetch data for ${ticker} from ${provider.name}...`);
-                const data = await provider.fetcher(ticker);
-                if (data) {
-                    console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
-                    return { ...data, dataSource: 'live' as const };
-                }
-            } catch (error: any) {
-                console.warn(`${provider.name} fetch failed for ${ticker}: ${error.message}. Trying next provider...`);
+    for (const provider of providers) {
+        try {
+            console.log(`Attempting to fetch data for ${ticker} from ${provider.name}...`);
+            const data = await provider.fetcher(ticker);
+            if (data) {
+                console.log(`Successfully fetched data for ${ticker} from ${provider.name}.`);
+                
+                // Generate AI prediction after successfully getting data
+                const predictions = await generateAIPrediction(ticker, data.name, data.price, data.change, data.changePercent, data.news || []);
+                
+                return { ...data, predictions, dataSource: 'live' as const };
             }
+        } catch (error: any) {
+            console.warn(`[${provider.name} Fetch Error for ${ticker}]: ${error.message}. Trying next provider...`);
         }
-
-        console.error(`All API providers failed for ${ticker}. Falling back to mock data.`);
-        return generateMockStockData(ticker);
     }
+
+    console.error(`All API providers failed for ${ticker}. Falling back to mock data.`);
+    return generateMockStockData(ticker);
+  }
 );
 
 
 // #region API Fetchers
 
-async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.POLYGON_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Polygon.io API key not configured.");
 
@@ -110,7 +113,7 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
     
     const price = quote.c.toFixed(2);
     const change = (quote.c - quote.o).toFixed(2);
-    const changePercent = (((quote.c - quote.o) / quote.o) * 100).toFixed(2);
+    const changePercent = quote.o !== 0 ? (((quote.c - quote.o) / quote.o) * 100).toFixed(2) : '0.00';
     const isUp = parseFloat(change) >= 0;
 
     const chartData = (aggregates?.results || []).map((agg: any) => ({
@@ -125,8 +128,6 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
         url: item.article_url,
         publishedAt: new Date(item.published_utc).toISOString().split('T')[0],
     }));
-
-    const predictions = await generateAIPrediction(ticker, profile.name, price, change, `${changePercent}%`, newsData);
 
     return {
         name: profile.name,
@@ -143,12 +144,11 @@ async function fetchFromPolygon(ticker: string): Promise<Omit<StockDataOutput, '
             { label: "Website", value: profile.homepage_url || 'N/A' },
         ],
         news: newsData,
-        predictions,
     };
 }
 
 
-async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.FINANCIAL_MODELING_PREP_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Financial Modeling Prep API key not configured.");
 
@@ -194,8 +194,6 @@ async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'data
         publishedAt: item.publishedDate.split(' ')[0],
     }));
 
-    const predictions = await generateAIPrediction(ticker, profileData.companyName, price, change, `${changePercent}%`, newsData);
-
     return {
         name: profileData.companyName,
         ticker: profileData.symbol,
@@ -211,12 +209,11 @@ async function fetchFromFMP(ticker: string): Promise<Omit<StockDataOutput, 'data
             { label: "Website", value: profileData.website || 'N/A' },
         ],
         news: newsData,
-        predictions,
     };
 }
 
 
-async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.FINNHUB_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Finnhub API key not configured.");
     
@@ -263,8 +260,6 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
         publishedAt: new Date(item.datetime * 1000).toISOString().split('T')[0],
     }));
     
-    const predictions = await generateAIPrediction(ticker, profile.name, price, change, `${changePercent}%`, newsData);
-
     return {
         name: profile.name || ticker,
         ticker: profile.ticker,
@@ -276,12 +271,11 @@ async function fetchFromFinnhub(ticker: string): Promise<Omit<StockDataOutput, '
             { label: "Website", value: profile.weburl || 'N/A' },
         ],
         news: newsData,
-        predictions
     };
 }
 
 
-async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.TWELVE_DATA_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Twelve Data API key not configured.");
     
@@ -322,8 +316,6 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
         publishedAt: new Date(item.datetime * 1000).toISOString().split('T')[0],
     }));
 
-    const predictions = await generateAIPrediction(ticker, profile.name, price, change, `${changePercent}%`, newsData);
-
     return {
         name: profile.name,
         ticker: profile.symbol,
@@ -335,12 +327,11 @@ async function fetchFromTwelveData(ticker: string): Promise<Omit<StockDataOutput
             { label: "Website", value: profile.website },
         ],
         news: newsData,
-        predictions,
     };
 }
 
 
-async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error(`Alpha Vantage API key not configured.`);
 
@@ -382,8 +373,6 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
     const changePercent = rawChangePercent ? parseFloat(rawChangePercent.replace('%','')).toFixed(2) : '0.00';
     const isUp = parseFloat(change) >= 0;
 
-    const predictions = await generateAIPrediction(ticker, overviewData.Name, price, change, `${changePercent}%`, news);
-
     return {
         name: overviewData.Name,
         ticker: overviewData.Symbol,
@@ -395,11 +384,10 @@ async function fetchFromAlphaVantage(ticker: string): Promise<Omit<StockDataOutp
             { label: "Revenue (TTM)", value: formatNumber(parseFloat(overviewData.RevenueTTM)) },
         ],
         news,
-        predictions
     };
 }
 
-async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource'> | null> {
+async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutput, 'dataSource' | 'predictions'> | null> {
     const apiKey = process.env.MARKETSTACK_API_KEY;
     if (!apiKey || !apiKey.trim()) throw new Error("Marketstack API key not configured.");
     
@@ -428,7 +416,7 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
     
     const price = latest.close.toFixed(2);
     const change = (latest.close - previous.close).toFixed(2);
-    const changePercent = ((change / previous.close) * 100).toFixed(2);
+    const changePercent = previous.close !== 0 ? ((change / previous.close) * 100).toFixed(2) : '0.00';
     const isUp = parseFloat(change) >= 0;
     
     const chartData = dailyData.map((d: any) => ({
@@ -443,8 +431,6 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
         url: item.url,
         publishedAt: item.published_at.split('T')[0],
     }));
-
-    const predictions = await generateAIPrediction(ticker, profile.name, price, change, `${changePercent}%`, news);
     
     return {
         name: profile.name,
@@ -457,23 +443,11 @@ async function fetchFromMarketstack(ticker: string): Promise<Omit<StockDataOutpu
             { label: "EPS", value: "N/A" },
         ],
         news,
-        predictions
     };
 }
 
 
 // #endregion
-
-const getStockDataFlow = ai.defineFlow(
-  {
-    name: 'getStockDataFlow',
-    inputSchema: StockDataInputSchema,
-    outputSchema: z.union([StockDataOutputSchema, z.null()]),
-  },
-  async (input) => {
-    return await getStockDataTool(input);
-  }
-);
 
 
 // #region Helper functions
@@ -504,3 +478,6 @@ function formatNewsDate(alphaVantageDate: string): string {
     return `${year}-${month}-${day}`;
 }
 // #endregion
+
+
+    
