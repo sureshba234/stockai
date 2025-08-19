@@ -112,20 +112,19 @@ const getNewsAndSentimentFlow = ai.defineFlow(
   },
   async ({ topic }) => {
     const rawArticles = await fetchNewsForTopic({ topic });
+    const analyzedArticles = [];
 
-    const analysisPromises = rawArticles.map(async (article) => {
+    for (const article of rawArticles) {
       const { output } = await prompt({
         title: article.title,
         content: article.content,
       });
-      return {
+      analyzedArticles.push({
         ...article,
         summary: output?.summary || 'Could not generate summary.',
         sentiment: output?.sentiment || 'Neutral',
-      };
-    });
-
-    const analyzedArticles = await Promise.all(analysisPromises);
+      });
+    }
 
     return { articles: analyzedArticles };
   }
