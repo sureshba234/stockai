@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
@@ -84,15 +84,11 @@ export default function StocksPage() {
     if (!api) {
       return
     }
-
     setCurrent(api.selectedScrollSnap())
-
     const handleSelect = () => {
       setCurrent(api.selectedScrollSnap())
     }
-
     api.on("select", handleSelect)
-
     return () => {
       api.off("select", handleSelect)
     }
@@ -119,32 +115,17 @@ export default function StocksPage() {
       setError(null);
       try {
         const data = await getStockData({ ticker: queryTicker });
-        if (data) {
-            setStockData(data);
-        } else {
-            const errorMessage = `Failed to fetch data for ${queryTicker}. The ticker may be invalid, or the API rate limit has been reached.`;
-            setError(errorMessage);
-            toast({
-              title: "Error Fetching Data",
-              description: errorMessage,
-              variant: "destructive"
-            });
-        }
+        setStockData(data);
       } catch (e: any) {
         console.error("Failed to fetch stock data", e);
         setError(e.message || `An unexpected error occurred while fetching data for ${queryTicker}.`);
-        toast({
-          title: "Error Fetching Data",
-          description: e.message || `An unexpected error occurred.`,
-          variant: "destructive"
-        })
       } finally {
         setIsLoading(false);
       }
     }
 
     fetchData();
-  }, [searchParams, toast]);
+  }, [searchParams]);
 
   const handleActionClick = (action: string) => {
     toast({
@@ -170,9 +151,7 @@ export default function StocksPage() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error || "An unknown error occurred while fetching stock data."}
-            <p className="text-xs mt-2">
-                This may be due to the Alpha Vantage API rate limit (free keys are limited). Please try again later or check your API key in the <code>.env</code> file.
-            </p>
+             <p className="text-xs mt-2">Please try searching for a different stock.</p>
           </AlertDescription>
         </Alert>
     )

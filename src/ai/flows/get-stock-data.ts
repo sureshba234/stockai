@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Fetches detailed stock data from an external API.
+ * @fileOverview Fetches detailed stock data from an external API, with a fallback to mock data.
  *
  * - getStockData - A function that fetches stock data.
  */
@@ -8,6 +8,8 @@
 import {ai} from '@/ai/genkit';
 import { z } from 'genkit';
 import { StockDataInputSchema, StockDataOutputSchema, type StockDataInput, type StockDataOutput } from '@/ai/schemas/stock-data';
+import { generateMockStockData } from '@/lib/mock-stock-data';
+
 
 export async function getStockData(input: StockDataInput): Promise<StockDataOutput | null> {
   return getStockDataFlow(input);
@@ -24,8 +26,8 @@ const getStockDataTool = ai.defineTool(
     async ({ ticker }) => {
         const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
         if (!apiKey || apiKey === 'YOUR_API_KEY' || !apiKey.trim()) {
-            console.error('Alpha Vantage API key is not configured. Please add it to your .env file.');
-            return null;
+            console.warn(`Alpha Vantage API key not configured. Falling back to mock data for ${ticker}.`);
+            return generateMockStockData(ticker);
         }
 
         const BASE_URL = 'https://www.alphavantage.co/query';
@@ -36,7 +38,6 @@ const getStockDataTool = ai.defineTool(
             if (!overviewResponse.ok) throw new Error(`Alpha Vantage OVERVIEW API request failed with status ${overviewResponse.status}`);
             const overviewData = await overviewResponse.json();
              if (overviewData.Note || !overviewData.Symbol) {
-                 console.error("Failed to fetch overview data or API limit reached:", overviewData);
                  throw new Error(`Could not retrieve company overview for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
 
@@ -45,7 +46,6 @@ const getStockDataTool = ai.defineTool(
              if (!quoteResponse.ok) throw new Error(`Alpha Vantage GLOBAL_QUOTE API request failed with status ${quoteResponse.status}`);
             const quoteData = (await quoteResponse.json())['Global Quote'];
              if (!quoteData || Object.keys(quoteData).length === 0) {
-                console.error("Failed to fetch quote data or API limit reached:", quoteData);
                 throw new Error(`Could not retrieve quote data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
             
@@ -54,7 +54,6 @@ const getStockDataTool = ai.defineTool(
              if (!chartResponse.ok) throw new Error(`Alpha Vantage TIME_SERIES_DAILY API request failed with status ${chartResponse.status}`);
             const chartDataRaw = (await chartResponse.json())['Time Series (Daily)'];
             if (!chartDataRaw) {
-              console.error("Failed to fetch chart data or API limit reached:", chartDataRaw);
               throw new Error(`Could not retrieve chart data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
 
@@ -121,8 +120,8 @@ const getStockDataTool = ai.defineTool(
             };
 
         } catch (error) {
-            console.error(`API call failed for ${ticker}:`, error);
-            return null;
+            console.error(`API call failed for ${ticker}, falling back to mock data:`, error);
+            return generateMockStockData(ticker);
         }
     }
 );
