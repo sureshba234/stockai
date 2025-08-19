@@ -1,0 +1,86 @@
+# **App Name**: Insight Canvas
+
+## Core Features:
+
+- Instruction Display: Display detailed instructions and UX/technical notes for each design/feature element of financial platforms, and map it to Lovable hosting.
+- Hosting Map Visualization: Visually map design elements to Lovable hosting capabilities for clear understanding.
+- ML Note Generation: Generate ML-specific notes (feature handling, explainability, confidence) for MLOps & Model Serving, and use tool-calling to intelligently incorporate it.
+- Prediction Visualization: Offer interactive visualizations for financial predictions to enhance user understanding, including ML-specific notes on feature handling, explainability, and confidence.
+- Real-time Alerts: Configure real-time alerts based on ML signals for timely decision-making, including ML-specific notes on feature handling, explainability, and confidence.
+- Portfolio Management: Allow users to create and manage personalized watchlists and paper trading portfolios.
+- Community Collaboration: Enable community collaboration features for sharing insights and strategies.
+- Graceful Degradation: Graceful degradation (fall back to cached) during provider slowness.
+- Circuit Breakers: Circuit breakers around external services; healthz/readiness probes.
+- Horizontal Scaling: Horizontal scaling with autoscaling policies based on QPS/latency.
+- Timeout Defaults: Sensible timeout defaults and cancellation on client disconnect.
+- Endpoint SLOs: Per-endpoint SLOs and dashboards for reliability.
+- Design System: Design system with tokens (spacing, color, radius, motion) and shadcn/Radix.
+- TypeScript React/Vue: TypeScript-first React/Vue with strict mode and ESLint/Prettier.
+- React Query: React Query/TanStack Query for server cache and background refresh.
+- Virtualized Tables: Virtualized tables for 50k+ rows without scroll jank.
+- Web Workers: Web Workers for heavy transforms (resampling, indicators, CSV parse).
+- Form Validation: Form validation with zod/yup; accessible, inline error messages.
+- Storybook Docs: Storybook docs with interactive props and a11y tests.
+- Playwright E2E Tests: Playwright e2e tests for core flows (search, screener, stock page).
+- Visual Regressions: Visual regressions via screenshot diffs on PRs.
+- PWA Ready: PWA-ready: icons, manifests, offline strategies documented.
+- Bundle Splitting: Bundle splitting, tree shaking, and code-splitting per route.
+- SVG Icon Set: SVG icon set (Lucide); no icon fonts; optimize for size.
+- Image Assets: Image assets in AVIF/WEBP with responsive sizes.
+- CSP Compliance: CSP-compliant patterns; sanitize any rich HTML content.
+- Error Boundary: Error boundary and retry UI for query failures.
+- Hotkeys and Palette: Hotkeys guide and command palette wired across pages.
+- Telemetry: Telemetry opt-in; anonymized event collection with sampling.
+- Performance Budgets: Performance budgets and Lighthouse CI checks per commit.
+- Dark Mode: Dark-mode friendly charts and tables with high contrast.
+- Localization: Localization/i18n pipeline with extraction and QA checks.
+- Share Screeners: Share screeners with descriptions, tags, and version history.
+- Fork Screeners: Fork others’ screeners; show diff and attribution to original.
+- Screener Comments: Comment threads on shared screeners with code snippets.
+- Upvote System: Upvote system to surface high-quality screens and ideas.
+- Screener Collections: Collections: bundle multiple screeners into a theme pack.
+- Creator Profiles: Creator profiles with badges (Educator, Quant, Value).
+- Moderation Tools: Moderation tools: report, hide, shadow-ban spammy posts.
+- Embed Widgets: Embed widgets for screeners/charts into blogs or Notion.
+- Weekly Spotlight: Weekly spotlight featuring top-performing community screens.
+- Sharing Guidelines: Guidelines for responsible sharing and risk disclaimers.
+- Team Workspaces: Private team workspaces with shared watchlists and alerts.
+- Read-Only Shares: Read-only share links for investor mentoring.
+- Collaborative Notes: Collaborative notes with mentions and attachments.
+- Community Data Packs: Community data packs (sector tags, alt data) with licenses.
+- Community Search/Filter: Search and filter community content by theme/return/recency.
+- Screener Copy: One-click copy of a public screener into your account.
+- Creator API Tokens: API tokens for creators to publish results programmatically.
+- Content Quality Scoring: Content quality scoring blending engagement and recency.
+- Educational Challenges: Educational challenges (build a screen) with leaderboards.
+- Privacy Redaction: Respect privacy: redact portfolios in public spaces by default.
+- Broker Integrations: Broker read-only integrations → paper trade → limited real orders (opt-in).
+- Enterprise SSO: Enterprise SSO/SAML/SCIM with audit logs export and data residency.
+- White-Label Theming: White-label theming and custom domains for partners/universities.
+- Private Data Connectors: Private data connectors (Bloomberg/Refinitiv) for enterprise tiers.
+- On-Device Inference: On-device inference experiments for privacy-preserving signals.
+- Graph Neural Networks: Graph neural networks for cross-asset relation discovery.
+- Robo-Advisor: Robo-advisor prototype with rules-based portfolio construction (paper).
+- Custom Indicator Scripting: Custom indicator scripting with sandboxed runtime (WASM).
+- Mobile Apps: Mobile-native apps (iOS/Android) with shared core modules.
+- Edge Inference: Edge inference workers close to exchanges for ultra-low latency.
+- Federated Learning: Federated learning opt-in with differential privacy guarantees.
+- AR/VR Market Rooms: AR/VR experimental market rooms for education events.
+- Regulatory Packs: Regulatory packs (SEBI/FINRA-aligned) for audit and reviews.
+- Data Marketplace: Data marketplace for premium factors/alternative data sources.
+- Multi-Asset Expansion: Multi-asset expansion (ETFs, commodities, FX, crypto).
+- Advisor Tools: Advisor tools: model portfolio publishing with disclosures.
+- Cost Dashboards: Cost dashboards and per-feature ROI tracking for ops.
+- Product Themes: Quarterly product themes with public roadmap updates.
+- Migration Tool: Migration tool to import from Screener/Trendlyne/TradingView.
+- Dedicated Support: Dedicated support SLAs and sandbox environments for enterprises.
+
+## Style Guidelines:
+
+- Primary color: Deep teal (#008080) to evoke trust and stability in financial data.
+- Background color: Light gray (#F0F8FF) to provide a clean and neutral backdrop.
+- Accent color: Soft orange (#FFB347) to highlight key information and interactive elements.
+- Body and headline font: 'Inter' (sans-serif) for clear, modern readability.
+- Use minimalist, consistent icons to represent financial concepts and data points.
+- Implement a clean, grid-based layout for organized presentation of instructions, notes, and visualizations.
+- Incorporate subtle transitions and animations to enhance user engagement and provide visual feedback.
