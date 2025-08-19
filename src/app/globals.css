@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 @layer base {
@@ -14,13 +14,13 @@ body {
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 220 90% 55%;
+    --primary: 180 100% 25.1%;
     --primary-foreground: 210 20% 98%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 9.8% 46.1%;
-    --accent: 220 14.3% 95.9%;
+    --accent: 35.6 91.7% 56.5%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
@@ -49,19 +49,19 @@ body {
     --card-foreground: 210 20% 98%;
     --popover: 225 10% 10%;
     --popover-foreground: 210 20% 98%;
-    --primary: 210 90% 60%;
+    --primary: 180 100% 35.1%;
     --primary-foreground: 225 10% 10%;
     --secondary: 215 15% 15%;
     --secondary-foreground: 210 20% 98%;
     --muted: 215 15% 15%;
     --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 15% 15%;
+    --accent: 35.6 91.7% 56.5%;
     --accent-foreground: 210 20% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
     --border: 215 15% 20%;
     --input: 215 15% 20%;
-    --ring: 210 90% 60%;
+    --ring: 180 100% 35.1%;
     --chart-1: 210 90% 60%;
     --chart-2: 160 90% 45%;
     --chart-3: 340 90% 60%;
