@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
@@ -70,8 +70,7 @@ function StockPageSkeleton() {
   );
 }
 
-
-export default function StocksPage() {
+function StockPageContent() {
   const searchParams = useSearchParams();
   const [stockData, setStockData] = useState<StockDataOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +150,7 @@ export default function StocksPage() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error || "An unknown error occurred while fetching stock data."}
-             <p className="text-xs mt-2">Please try searching for a different stock.</p>
+             <p className="text-xs mt-2">Please try searching for a different stock or check your API keys.</p>
           </AlertDescription>
         </Alert>
     )
@@ -310,4 +309,12 @@ export default function StocksPage() {
 
     </div>
   );
+}
+
+export default function StocksPage() {
+    return (
+        <Suspense fallback={<StockPageSkeleton />}>
+            <StockPageContent />
+        </Suspense>
+    );
 }
