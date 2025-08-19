@@ -53,10 +53,11 @@ const stockAgentFlow = ai.defineFlow(
     outputSchema: StockAgentOutputSchema,
   },
   async input => {
-    // Prefer OpenAI if available, otherwise fall back to Google AI.
-    const model = process.env.OPENAI_API_KEY ? openAI('gpt-4o') : 'googleai/gemini-2.0-flash';
-    
-    const {output} = await agentPrompt(input, { model });
+    // The global 'ai' object is now configured to use OpenAI if the API key is present.
+    // We can add model selection logic here if we need to override the default.
+    const {output} = await agentPrompt(input, {
+        model: process.env.OPENAI_API_KEY ? 'openai/gpt-4o' : 'googleai/gemini-2.0-flash',
+    });
 
     return output!;
   }
