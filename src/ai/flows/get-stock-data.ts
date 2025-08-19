@@ -47,6 +47,7 @@ const getStockDataTool = ai.defineTool(
             }
             const quoteData = (await quoteResponse.json())['Global Quote'];
              if (!quoteData || Object.keys(quoteData).length === 0) {
+                console.error("Failed to fetch quote data or API limit reached:", quoteData);
                 throw new Error(`Could not retrieve quote data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
             
@@ -56,6 +57,10 @@ const getStockDataTool = ai.defineTool(
                 throw new Error(`Alpha Vantage TIME_SERIES_DAILY API request failed with status ${chartResponse.status}`);
             }
             const chartDataRaw = (await chartResponse.json())['Time Series (Daily)'];
+            if (!chartDataRaw) {
+              console.error("Failed to fetch chart data or API limit reached:", chartDataRaw);
+              throw new Error(`Could not retrieve chart data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
+            }
 
             // Fetch news
             const newsResponse = await fetch(`${BASE_URL}?function=NEWS_SENTIMENT&tickers=${ticker}&limit=5&apikey=${apiKey}`);
@@ -85,10 +90,11 @@ const getStockDataTool = ai.defineTool(
                 url: item.url,
                 publishedAt: formatNewsDate(item.time_published),
             }));
-
+            
+            const rawChangePercent = quoteData['10. change_percent'];
             const price = parseFloat(quoteData['05. price']).toFixed(2);
             const change = parseFloat(quoteData['09. change']).toFixed(2);
-            const changePercent = parseFloat(quoteData['10. change_percent'].replace('%','')).toFixed(2);
+            const changePercent = rawChangePercent ? parseFloat(rawChangePercent.replace('%','')).toFixed(2) : '0.00';
             const isUp = parseFloat(change) >= 0;
 
             // Generate AI prediction
