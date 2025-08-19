@@ -22,7 +22,7 @@ const getStockDataTool = ai.defineTool(
     },
     async ({ ticker }) => {
         const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-        if (!apiKey || apiKey === 'YOUR_API_KEY') {
+        if (!apiKey || apiKey === 'YOUR_API_KEY' || !apiKey.trim()) {
             throw new Error('Alpha Vantage API key is not configured. Please add it to your .env file.');
         }
 
@@ -31,22 +31,37 @@ const getStockDataTool = ai.defineTool(
         try {
             // Fetch company overview for fundamentals and name
             const overviewResponse = await fetch(`${BASE_URL}?function=OVERVIEW&symbol=${ticker}&apikey=${apiKey}`);
+            if (!overviewResponse.ok) {
+                throw new Error(`Alpha Vantage OVERVIEW API request failed with status ${overviewResponse.status}`);
+            }
             const overviewData = await overviewResponse.json();
             if (overviewData.Note || !overviewData.Symbol) {
                  console.error("Failed to fetch overview data or API limit reached:", overviewData);
-                 throw new Error(`Could not retrieve data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
+                 throw new Error(`Could not retrieve company overview for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
             }
 
             // Fetch global quote for price, change
             const quoteResponse = await fetch(`${BASE_URL}?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`);
+             if (!quoteResponse.ok) {
+                throw new Error(`Alpha Vantage GLOBAL_QUOTE API request failed with status ${quoteResponse.status}`);
+            }
             const quoteData = (await quoteResponse.json())['Global Quote'];
+             if (!quoteData || Object.keys(quoteData).length === 0) {
+                throw new Error(`Could not retrieve quote data for ${ticker}. The ticker may be invalid or the API limit might have been reached.`);
+            }
             
             // Fetch daily time series for the chart
             const chartResponse = await fetch(`${BASE_URL}?function=TIME_SERIES_DAILY&symbol=${ticker}&apikey=${apiKey}`);
+             if (!chartResponse.ok) {
+                throw new Error(`Alpha Vantage TIME_SERIES_DAILY API request failed with status ${chartResponse.status}`);
+            }
             const chartDataRaw = (await chartResponse.json())['Time Series (Daily)'];
 
             // Fetch news
             const newsResponse = await fetch(`${BASE_URL}?function=NEWS_SENTIMENT&tickers=${ticker}&limit=5&apikey=${apiKey}`);
+            if (!newsResponse.ok) {
+                throw new Error(`Alpha Vantage NEWS_SENTIMENT API request failed with status ${newsResponse.status}`);
+            }
             const newsData = (await newsResponse.json()).feed || [];
 
             // Process and format the data to match our schema
@@ -59,8 +74,8 @@ const getStockDataTool = ai.defineTool(
             
             const fundamentalsData = [
                 { label: "Market Cap", value: formatNumber(parseFloat(overviewData.MarketCapitalization)) },
-                { label: "P/E Ratio", value: overviewData.PERatio },
-                { label: "EPS", value: overviewData.EPS },
+                { label: "P/E Ratio", value: overviewData.PERatio || 'N/A' },
+                { label: "EPS", value: overviewData.EPS || 'N/A' },
                 { label: "Revenue (TTM)", value: formatNumber(parseFloat(overviewData.RevenueTTM)) },
             ];
 
@@ -107,6 +122,9 @@ const getStockDataTool = ai.defineTool(
 
         } catch (error) {
             console.error(`API call failed for ${ticker}:`, error);
+            if (error instanceof Error) {
+                throw new Error(error.message);
+            }
             throw new Error(`Failed to fetch complete data for ${ticker}. The API may be temporarily unavailable or the symbol is invalid.`);
         }
     }
@@ -126,7 +144,7 @@ const getStockDataFlow = ai.defineFlow(
 
 // Helper functions for formatting
 function formatNumber(num: number): string {
-    if (!num || isNaN(num)) return "N/A";
+    if (num === null || num === undefined || isNaN(num)) return "N/A";
     if (num >= 1_000_000_000_000) {
         return (num / 1_000_000_000_000).toFixed(2) + 'T';
     }
