@@ -83,18 +83,19 @@ const timeRanges = [
     { label: "1Yr", days: 365 },
     { label: "3Yr", days: 365 * 3 },
     { label: "5Yr", days: 365 * 5 },
+    { label: "10Yr", days: 365 * 10},
     { label: "Max", days: Infinity },
 ];
 
 function calculateMovingAverage(data: {price: number}[], period: number) {
     if (!data || data.length < period) return [];
-    const result = [];
+    
+    const result = Array(data.length).fill(null);
     for (let i = period - 1; i < data.length; i++) {
         const sum = data.slice(i - period + 1, i + 1).reduce((acc, val) => acc + val.price, 0);
-        result.push(sum / period);
+        result[i] = sum / period;
     }
-    // Pad the beginning with nulls so the array length matches
-    return Array(period - 1).fill(null).concat(result);
+    return result;
 }
 
 function StockPageContent() {
@@ -174,13 +175,15 @@ function StockPageContent() {
     if (!stockData) return [];
     
     const rangeInfo = timeRanges.find(r => r.label === selectedTimeRange);
-    const daysToShow = rangeInfo ? rangeInfo.days : 365;
+    const daysToShow = rangeInfo ? rangeInfo.days : Infinity;
 
-    const slicedData = stockData.chartData.slice(-daysToShow);
-    const ma50 = calculateMovingAverage(slicedData, 50);
-    const ma200 = calculateMovingAverage(slicedData, 200);
+    const allChartData = stockData.chartData;
+    const dataSlice = daysToShow >= allChartData.length ? allChartData : allChartData.slice(-daysToShow);
+    
+    const ma50 = calculateMovingAverage(dataSlice, 50);
+    const ma200 = calculateMovingAverage(dataSlice, 200);
 
-    return slicedData.map((point, index) => ({
+    return dataSlice.map((point, index) => ({
       ...point,
       price: point.price,
       ma50: ma50[index],
@@ -381,8 +384,8 @@ function StockPageContent() {
                   }}
                   formatter={(value: any, name: string) => {
                      if (name === 'price') return [`$${(value as number).toFixed(2)}`, 'Price'];
-                     if (name === 'ma50') return [`$${(value as number).toFixed(2)}`, '50 DMA'];
-                     if (name === 'ma200') return [`$${(value as number).toFixed(2)}`, '200 DMA'];
+                     if (name === 'ma50') return value ? [`$${(value as number).toFixed(2)}`, '50 DMA'] : null;
+                     if (name === 'ma200') return value ? [`$${(value as number).toFixed(2)}`, '200 DMA'] : null;
                      if (name === 'volume') return [formatVolume(value as number), 'Volume'];
                      return [value, name];
                   }}
