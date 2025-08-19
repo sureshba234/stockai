@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -13,7 +14,6 @@ import React from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { stockData } from "@/lib/stocks";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Input } from "@/components/ui/input";
 
 
 function StockSearch() {
@@ -58,7 +58,6 @@ function StockSearch() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <CommandInput
-            as={Input}
             value={query}
             onValueChange={setQuery}
             onFocus={() => setIsOpen(true)}
