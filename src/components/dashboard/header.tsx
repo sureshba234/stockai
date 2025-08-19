@@ -26,6 +26,12 @@ function StockSearch() {
     setQuery("");
     router.push(`/dashboard/stocks?q=${ticker}`);
   }, [router]);
+  
+  const runCommand = React.useCallback((command: () => unknown) => {
+    setIsOpen(false)
+    command()
+  }, [])
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -66,7 +72,7 @@ function StockSearch() {
                     <CommandItem
                       key={stock.ticker}
                       value={`${stock.name} ${stock.ticker}`}
-                      onSelect={() => handleSelect(stock.ticker)}
+                      onSelect={() => runCommand(() => router.push(`/dashboard/stocks?q=${stock.ticker}`))}
                       className="cursor-pointer"
                     >
                       <LineChart className="mr-2 h-4 w-4" />
